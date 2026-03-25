@@ -65,7 +65,8 @@ class TestIsInCooldown:
     def test_clear_nonexistent_wallet_does_not_raise(self):
         """clear() on an unknown wallet_id must not raise."""
         mgr = _make_manager()
-        mgr.clear("nonexistent_wallet")  # should not raise
+        mgr.clear("nonexistent_wallet")
+        assert not mgr.is_in_cooldown("nonexistent_wallet")
 
     def test_clear_all_removes_all_cooldowns(self):
         """clear_all() removes every active cooldown."""
@@ -106,11 +107,12 @@ class TestWaitMethod:
         """CooldownManager.wait() completes without raising (sleep is mocked)."""
         mgr = CooldownManager(lam=100.0, gaussian_sigma=0.0)
 
-        async def fake_sleep(_: float) -> None:
-            return None
+        with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+            await mgr.wait()
 
-        with patch("asyncio.sleep", side_effect=fake_sleep):
-            await mgr.wait()  # must not raise
+        mock_sleep.assert_called_once()
+        delay = mock_sleep.call_args[0][0]
+        assert delay >= 0.0
 
     @pytest.mark.asyncio
     async def test_wait_calls_asyncio_sleep_once(self):

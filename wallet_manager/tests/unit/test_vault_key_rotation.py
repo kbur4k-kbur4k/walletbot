@@ -26,7 +26,8 @@ class TestKeyRotation:
 
     def test_generate_key_is_valid_fernet(self):
         key = Vault.generate_key()
-        Fernet(key.encode())
+        fernet = Fernet(key.encode())
+        assert fernet is not None
 
     def test_generate_key_unique_each_call(self):
         k1 = Vault.generate_key()

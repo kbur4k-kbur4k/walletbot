@@ -63,4 +63,5 @@ def test_crowding_detector_update_does_not_raise():
     detector.update_gas(10.0)
     detector.update_signal(0.5, 10.0)
     detector.update_is(2.5)
-    # No assertion needed — not raising is the criterion
+    signal = detector.get_crowding_signal()
+    assert 0.0 <= signal.composite <= 1.0

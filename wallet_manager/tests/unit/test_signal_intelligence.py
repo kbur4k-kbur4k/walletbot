@@ -85,7 +85,8 @@ class TestOnChainMetricsSignal:
         for _ in range(20):
             sig_low_gas.update(gas_gwei=1.0, dex_volume_usd=100_000, buy_ratio=0.55)
             sig_high_gas.update(gas_gwei=100.0, dex_volume_usd=100_000, buy_ratio=0.55)
-        # Exception fırlatmamalı
+        assert isinstance(sig_low_gas._composite, float)
+        assert isinstance(sig_high_gas._composite, float)
 
     def test_update_accumulates_history(self):
         """Birden fazla update çağrısı hata vermemeli."""
@@ -96,6 +97,7 @@ class TestOnChainMetricsSignal:
                 dex_volume_usd=50_000 + i * 1000,
                 buy_ratio=0.5,
             )
+        assert len(signal._gas_history) > 0
 
     def test_update_does_not_raise(self):
         """update() geçerli girişlerle exception fırlatmamalı."""
@@ -106,3 +108,4 @@ class TestOnChainMetricsSignal:
                 dex_volume_usd=100_000.0 + i * 5_000,
                 buy_ratio=0.55,
             )
+        assert isinstance(signal._composite, float)

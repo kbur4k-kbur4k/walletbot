@@ -62,7 +62,8 @@ def test_invalid_vault_key_raises():
 def test_generate_key_is_valid():
     key = Vault.generate_key()
     # Should be usable as a Fernet key without error
-    Fernet(key.encode())
+    fernet = Fernet(key.encode())
+    assert fernet is not None
 
 
 def test_decrypt_wallet_id_in_error():

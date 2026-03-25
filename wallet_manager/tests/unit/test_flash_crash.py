@@ -84,3 +84,4 @@ class TestCrashDetection:
         detector = FlashCrashDetector(crash_threshold=0.08, window_seconds=60.0)
         for price in [2000.0, 1900.0, 1800.0]:
             detector.ingest_price(price)
+        assert len(detector._prices) >= 1

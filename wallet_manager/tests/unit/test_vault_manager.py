@@ -187,6 +187,7 @@ class TestRecordRotation:
         missing = tmp_path / "no_such_file.json"
         # Should not raise
         VaultKeyManager.record_rotation(missing)
+        assert not missing.exists()
 
 
 # ---------------------------------------------------------------------------
@@ -218,6 +219,8 @@ class TestCheckAndRemind:
             await manager.check_and_remind(notifier, wallets)
 
         notifier.send_event.assert_awaited_once()
+        assert notifier.send_event.await_count == 1
+        assert notifier.send_event.await_count == 1
 
     @pytest.mark.asyncio
     async def test_no_alert_when_fresh(self, tmp_path: Path):
@@ -241,6 +244,7 @@ class TestCheckAndRemind:
             await manager.check_and_remind(notifier, wallets)
 
         notifier.send_event.assert_not_awaited()
+        assert notifier.send_event.await_count == 0
 
     @pytest.mark.asyncio
     async def test_sends_alert_when_no_meta_inf(self, tmp_path: Path):
@@ -260,3 +264,4 @@ class TestCheckAndRemind:
             await manager.check_and_remind(notifier, wallets)
 
         notifier.send_event.assert_awaited_once()
+        assert notifier.send_event.await_count == 1

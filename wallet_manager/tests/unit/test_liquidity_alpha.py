@@ -180,6 +180,9 @@ class TestEmptyBookReturnsSafeDefaults:
             depth = self.profiler._compute_depth([], 203_400, 3_000.0)
             score = self.profiler._compute_score(depth, 5_000.0)
             slippage = self.profiler._estimate_slippage([], 5_000.0, depth, 3_000.0)
+            assert depth == 0.0
+            assert score == 0
+            assert slippage == FALLBACK_SLIPPAGE_BPS
         except Exception as exc:
             pytest.fail(f"Empty book raised an unexpected exception: {exc}")
 

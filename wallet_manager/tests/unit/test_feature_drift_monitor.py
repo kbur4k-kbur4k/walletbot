@@ -25,7 +25,8 @@ def test_instantiation(monitor):
 
 def test_update_does_not_raise(monitor, sample_feature_vector, feature_names):
     """update() accepts a 30-dim vector without raising."""
-    monitor.update(sample_feature_vector, feature_names)   # must not raise
+    monitor.update(sample_feature_vector, feature_names)
+    assert monitor._update_count >= 1
 
 
 def test_get_drift_report_returns_required_keys(monitor, feature_names):

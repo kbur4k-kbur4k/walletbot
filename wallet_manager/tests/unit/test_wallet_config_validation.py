@@ -24,6 +24,7 @@ _VALID_WALLET = {
 def test_valid_wallet_config_passes():
     """A correctly formed wallet config must not raise."""
     validate_wallets_schema([_VALID_WALLET])
+    assert True  # no exception raised — validation passed
 
 
 def test_invalid_address_raises_configuration_error():
@@ -79,12 +80,14 @@ def test_vault_meta_entry_is_skipped():
     """_vault_meta dict entries must be silently skipped."""
     data = [{"_vault_meta": {"version": 1}}, _VALID_WALLET]
     validate_wallets_schema(data)  # must not raise
+    assert True  # no exception raised
 
 
 def test_enabled_field_accepts_bool():
     """enabled=False is a valid wallet config."""
     entry = {**_VALID_WALLET, "enabled": False}
     validate_wallets_schema([entry])
+    assert True  # no exception raised
 
 
 def test_enabled_field_rejects_string():

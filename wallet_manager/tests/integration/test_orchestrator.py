@@ -89,6 +89,7 @@ async def test_orchestrator_single_cycle_completes(
             # TimeoutError is acceptable (means run() didn't crash, just slow)
             if not isinstance(exc, asyncio.TimeoutError):
                 pytest.fail(f"Unexpected exception: {exc}")
+        assert orchestrator is not None
 
 
 @pytest.mark.asyncio

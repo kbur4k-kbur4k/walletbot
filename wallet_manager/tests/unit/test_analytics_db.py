@@ -59,6 +59,8 @@ class TestRecordTx:
         )
         await db.record_tx(record)
         await db.update_tx_status("0xdef", TxStatus.MINED, gas_used=45000)
+        summary = await db.get_wallet_summary("w2")
+        assert summary.total_txs >= 1
 
     @pytest.mark.asyncio
     async def test_wallet_summary_empty(self, db):
@@ -76,3 +78,5 @@ class TestSessionReport:
     @pytest.mark.asyncio
     async def test_close_session(self, db):
         await db.close_session(session_id="test_session_1", final_value_usd=1000.0)
+        report = await db.get_session_report()
+        assert report is not None

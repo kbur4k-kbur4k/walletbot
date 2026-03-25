@@ -77,9 +77,7 @@ class TestIdleSweep:
                 manager=mock_manager,
                 wallet_id="w1",
             )
-
-
-# ---------------------------------------------------------------------------
+        assert mock_manager.sign_and_broadcast_tx.called or result is not None
 # Additional tests matching the actual run_idle_sweep(manager, wallet_id, ...)
 # ---------------------------------------------------------------------------
 
