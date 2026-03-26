@@ -37,8 +37,12 @@ import sys
 import time
 from collections import deque
 from dataclasses import asdict, dataclass
+from typing import TYPE_CHECKING
 
 from wallet_manager.security.logging_filter import build_logger
+
+if TYPE_CHECKING:
+    from aiohttp.web import Request, Response
 
 log = build_logger(__name__)
 
@@ -47,11 +51,11 @@ log = build_logger(__name__)
 # ---------------------------------------------------------------------------
 
 try:
-    import psutil  # type: ignore[import-untyped]
+    import psutil as psutil
 
     _HAS_PSUTIL = True
 except ImportError:  # pragma: no cover
-    psutil = None  # type: ignore[assignment]
+    psutil = None  # type: ignore[assignment]  # psutil unavailable at runtime
     _HAS_PSUTIL = False
 
 # ---------------------------------------------------------------------------
@@ -133,7 +137,7 @@ def _get_memory_rss_mb() -> float:
     if _HAS_PSUTIL:
         try:
             proc = psutil.Process(os.getpid())
-            return proc.memory_info().rss / (1024 * 1024)
+            return float(proc.memory_info().rss / (1024 * 1024))
         except Exception:
             log.warning("psutil.Process().memory_info() failed; falling back")
 
@@ -157,7 +161,7 @@ def _get_cpu_pct() -> float:
     if _HAS_PSUTIL:
         try:
             proc = psutil.Process(os.getpid())
-            return proc.cpu_percent(interval=0)
+            return float(proc.cpu_percent(interval=0))
         except Exception:
             pass
     return 0.0
@@ -552,7 +556,7 @@ class HealthCheckAPI:
 
     # -- route handlers ------------------------------------------------------
 
-    async def _handle_health(self, _request: object) -> object:
+    async def _handle_health(self, _request: Request) -> Response:
         """``GET /health`` — compact JSON for OCI health probes."""
         from aiohttp import web
 
@@ -575,14 +579,14 @@ class HealthCheckAPI:
         }
         return web.json_response(body)
 
-    async def _handle_vitals(self, _request: object) -> object:
+    async def _handle_vitals(self, _request: Request) -> Response:
         """``GET /vitals`` — full ``SystemVitals`` as JSON dict."""
         from aiohttp import web
 
         vitals = self._watchdog.build_vitals()
         return web.json_response(asdict(vitals))
 
-    async def _handle_events(self, _request: object) -> object:
+    async def _handle_events(self, _request: Request) -> Response:
         """``GET /events`` — recent watchdog events."""
         from aiohttp import web
 
@@ -590,7 +594,7 @@ class HealthCheckAPI:
         payload = [asdict(e) for e in events]
         return web.json_response(payload)
 
-    async def _handle_portfolio(self, _request: object) -> object:
+    async def _handle_portfolio(self, _request: Request) -> Response:
         """``GET /portfolio`` — execution mode and engine status."""
         from aiohttp import web
 

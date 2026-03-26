@@ -50,8 +50,11 @@ disallow_untyped_defs = true
 exclude = [
     "tests/",
     "scripts/",
-    "wallet_manager/strategies/oci_deployer.py",
 ]
+
+[[tool.mypy.overrides]]
+module = "wallet_manager.strategies.oci_deployer"
+warn_unused_ignores = false
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
