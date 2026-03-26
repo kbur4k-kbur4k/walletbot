@@ -869,8 +869,13 @@ def train_ppo(df_hist: pd.DataFrame) -> dict:
 # ===========================================================================
 
 def write_report(quality: DataQualityReport, models: dict, pruned: list[str]) -> Path:
+    now = datetime.now(timezone.utc)
+    version = now.strftime("%Y%m%d_%H%M%S")
     report = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "version": version,
+        "trained_at": now.isoformat(),
+        "archive_path": "",
+        "generated_at": now.isoformat(),
         "data_quality": {
             "total_candles": quality.total_candles,
             "date_range_days": round(quality.date_range_days, 1),
@@ -889,6 +894,37 @@ def write_report(quality: DataQualityReport, models: dict, pruned: list[str]) ->
     path.write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
     log.info(f"training_report.json → {path}")
     return path
+
+
+def archive_models(ml_models_dir: str = "ml_models") -> str:
+    """
+    Copy all model files from ml_models/ into ml_models/archive/YYYYMMDD_HHMMSS/.
+    Delete old archives keeping only the 3 most recent.
+    Returns the archive path created.
+    """
+    import os as _os
+    from datetime import datetime as _datetime
+
+    timestamp = _datetime.utcnow().strftime("%Y%m%d_%H%M%S_%f")
+    archive_dir = _os.path.join(ml_models_dir, "archive", timestamp)
+    _os.makedirs(archive_dir, exist_ok=True)
+
+    for f in _os.listdir(ml_models_dir):
+        full_path = _os.path.join(ml_models_dir, f)
+        if _os.path.isfile(full_path):
+            shutil.copy2(full_path, archive_dir)
+
+    archive_base = _os.path.join(ml_models_dir, "archive")
+    if _os.path.exists(archive_base):
+        subdirs = sorted([
+            d for d in _os.listdir(archive_base)
+            if _os.path.isdir(_os.path.join(archive_base, d))
+        ])
+        while len(subdirs) > 3:
+            oldest = subdirs.pop(0)
+            shutil.rmtree(_os.path.join(archive_base, oldest))
+
+    return archive_dir
 
 
 # ===========================================================================
@@ -1003,6 +1039,15 @@ async def main() -> None:
     # ── 5.8  Write Report ─────────────────────────────────────────────────────
     print("\n=== 5.8  Training Report ===")
     report_path = write_report(quality_report, model_results, pruned)
+
+    # ── 5.9  Archive Models ───────────────────────────────────────────────────
+    print("\n=== 5.9  Model Archive ===")
+    archive_path = archive_models(str(MODEL_DIR))
+    # Patch report with the archive path now that it is known
+    _report_data = json.loads(report_path.read_text(encoding="utf-8"))
+    _report_data["archive_path"] = archive_path
+    report_path.write_text(json.dumps(_report_data, indent=2, default=str), encoding="utf-8")
+    print(f"  Archived to: {archive_path}")
 
     # ── Summary ───────────────────────────────────────────────────────────────
     accepted  = [k for k, v in model_results.items() if v.get("accepted")]

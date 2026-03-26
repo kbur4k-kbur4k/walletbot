@@ -1416,9 +1416,27 @@ class CommandCenter:
                 )
         else:
             self._pending_retrain = True
+            _model_version = "unknown"
+            _trained_at = "unknown"
+            try:
+                import json as _json
+                from pathlib import Path as _Path
+                _report_path = (
+                    _Path(__file__).resolve().parent.parent
+                    / "ml_models"
+                    / "training_report.json"
+                )
+                if _report_path.exists():
+                    _rdata = _json.loads(_report_path.read_text(encoding="utf-8"))
+                    _model_version = _rdata.get("version", "unknown")
+                    _trained_at = _rdata.get("trained_at", "unknown")
+            except Exception:
+                pass
             await self._reply(
                 chat_id,
                 "\u26a0\ufe0f *Manual retrain requested*\n"
+                f"Current model version: {_MessageFormatter._escape_md(_model_version)}\n"
+                f"Last trained: {_MessageFormatter._escape_md(_trained_at)}\n"
                 "This will halt trading during retraining\\.\n"
                 "Send /retrain confirm to proceed, or any other command to cancel\\.",
             )
