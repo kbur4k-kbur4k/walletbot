@@ -79,6 +79,7 @@ from wallet_manager.portfolio_manager import (
 from wallet_manager.scheduler import SchedulerManager, should_run_swap_this_cycle
 from wallet_manager.security.logging_filter import build_logger
 from wallet_manager.telegram_notifier import StatusProvider
+from wallet_manager.orchestrator_status import LiveStatusProvider  # noqa: F401
 
 log = build_logger(__name__)
 

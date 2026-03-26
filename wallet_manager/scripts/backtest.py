@@ -9,17 +9,29 @@ Usage:
       --end-date      YYYY-MM-DD
       --initial-usd   float                   (default: 1000.0)
       --output        path
+      --db-path       path to analytics SQLite DB (default: from Settings)
       --plot          flag
+
+Data source priority
+--------------------
+1. Real trade data from the SQLite analytics DB (``AnalyticsDB``).
+2. Synthetic Gaussian simulation (fallback when DB is empty or unavailable).
 """
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import math
 import os
 import sys
+import time
 from datetime import datetime, timedelta
 from typing import Any
+
+# Ensure the package is importable when run from the repo root
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(_HERE, ".."))
 
 
 def parse_args() -> argparse.Namespace:
@@ -29,6 +41,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--end-date", default=None, help="YYYY-MM-DD")
     p.add_argument("--initial-usd", type=float, default=1000.0)
     p.add_argument("--output", default=None)
+    p.add_argument("--db-path", default=None, help="Path to analytics SQLite DB")
     p.add_argument("--plot", action="store_true")
     return p.parse_args()
 
@@ -77,17 +90,121 @@ def compute_profit_factor(trades: list[dict[str, Any]]) -> float:
     return gross_profit / gross_loss
 
 
-def simulate_trades(
+async def _load_from_analytics_db(
+    db_path: str | None,
+    mode: str,
+    start_date: datetime,
+    end_date: datetime,
+    initial_usd: float,
+) -> tuple[list[dict[str, Any]], list[float]] | None:
+    """Load real trade data from the SQLite analytics DB.
+
+    Returns ``(trades, equity_curve)`` built from on-chain transaction records,
+    or ``None`` if the DB is unavailable or contains no matching rows.
+    """
+    try:
+        from wallet_manager.resilience.analytics import AnalyticsDB
+    except ImportError:
+        return None
+
+    db = AnalyticsDB(db_path=db_path) if db_path else AnalyticsDB()
+    try:
+        await db.open()
+
+        start_ts = start_date.timestamp()
+        end_ts = end_date.timestamp()
+
+        # Fetch all mined transactions in the date range from the DB
+        sql = """
+            SELECT strategy_type,
+                   submitted_at,
+                   mined_at,
+                   gas_used,
+                   gas_price_gwei,
+                   CAST(value_wei AS REAL) AS value_wei
+            FROM transactions
+            WHERE status = 'MINED'
+              AND submitted_at >= ?
+              AND submitted_at <= ?
+            ORDER BY submitted_at ASC
+        """
+        async with db._db.execute(sql, (start_ts, end_ts)) as cur:
+            rows = await cur.fetchall()
+
+        if not rows:
+            return None
+
+        # Build synthetic equity curve from gas cost + value movements.
+        # PnL proxy: value_wei converted to approximate USD at ~3000 USD/ETH.
+        # Gas cost is subtracted as a direct USD expense.
+        ETH_PRICE_USD = 3000.0
+        WEI_TO_ETH = 1e-18
+        GWEI_TO_ETH = 1e-9
+
+        trades: list[dict[str, Any]] = []
+        equity = initial_usd
+        equity_curve = [equity]
+
+        # Group rows into daily buckets for the equity curve
+        day_index: dict[str, list[dict[str, Any]]] = {}
+        days = (end_date - start_date).days or 1
+        for i in range(days):
+            day = (start_date + timedelta(days=i)).date().isoformat()
+            day_index[day] = []
+
+        for row in rows:
+            submitted_at = row["submitted_at"]
+            day_str = datetime.utcfromtimestamp(submitted_at).date().isoformat()
+            gas_cost_usd = (
+                (row["gas_used"] or 0) * (row["gas_price_gwei"] or 0) * GWEI_TO_ETH * ETH_PRICE_USD
+            )
+            value_usd = (row["value_wei"] or 0) * WEI_TO_ETH * ETH_PRICE_USD
+            # Treat value_wei outflows as costs; gas is always a cost
+            pnl_usd = round(-gas_cost_usd, 4)  # net per-tx PnL approximation
+            trade = {
+                "date": day_str,
+                "mode": mode,
+                "pillar": str(row["strategy_type"] or "UNKNOWN").upper(),
+                "pnl_usd": pnl_usd,
+                "value_usd": round(value_usd, 4),
+                "gas_cost_usd": round(gas_cost_usd, 4),
+                "duration_hours": 0.0,
+                "source": "analytics_db",
+            }
+            if mined := row["mined_at"]:
+                duration_h = (mined - submitted_at) / 3600.0
+                trade["duration_hours"] = round(duration_h, 4)
+            trades.append(trade)
+            if day_str in day_index:
+                day_index[day_str].append(trade)
+
+        # Rebuild equity curve day-by-day
+        equity_curve = [initial_usd]
+        for i in range(days):
+            day = (start_date + timedelta(days=i)).date().isoformat()
+            day_trades = day_index.get(day, [])
+            for t in day_trades:
+                equity += t["pnl_usd"]
+            equity_curve.append(max(equity, 0.01))
+
+        return trades, equity_curve
+
+    except Exception:
+        return None
+    finally:
+        try:
+            await db.close()
+        except Exception:
+            pass
+
+
+def _synthetic_trades(
     mode: str,
     start_date: datetime,
     end_date: datetime,
     initial_usd: float,
 ) -> tuple[list[dict[str, Any]], list[float]]:
-    """
-    Generate synthetic trade history for backtesting.
-    In production this loads from the SQLite analytics DB.
-    Returns (trades, equity_curve).
-    """
+    """Gaussian synthetic trade simulation — used only when DB has no data."""
     import random
     random.seed(42)
 
@@ -108,10 +225,39 @@ def simulate_trades(
                 "pillar": random.choice(["YIELD", "ALGO", "SHORT", "AIRDROP"]),
                 "pnl_usd": round(pnl, 4),
                 "duration_hours": round(abs(random.gauss(4.0, 2.0)), 2),
+                "source": "synthetic",
             })
         equity_curve.append(max(equity, 0.01))
 
     return trades, equity_curve
+
+
+def load_trades(
+    mode: str,
+    start_date: datetime,
+    end_date: datetime,
+    initial_usd: float,
+    db_path: str | None = None,
+) -> tuple[list[dict[str, Any]], list[float], str]:
+    """Load trade data from the analytics DB, falling back to synthetic data.
+
+    Returns:
+        ``(trades, equity_curve, source)`` where source is ``"analytics_db"``
+        or ``"synthetic"``.
+    """
+    try:
+        result = asyncio.run(
+            _load_from_analytics_db(db_path, mode, start_date, end_date, initial_usd)
+        )
+        if result is not None:
+            trades, equity_curve = result
+            if trades:
+                return trades, equity_curve, "analytics_db"
+    except Exception:
+        pass
+
+    trades, equity_curve = _synthetic_trades(mode, start_date, end_date, initial_usd)
+    return trades, equity_curve, "synthetic"
 
 
 def print_summary(metrics: dict[str, Any]) -> None:
@@ -142,7 +288,11 @@ def main() -> None:
         else end_date - timedelta(days=90)
     )
 
-    trades, equity_curve = simulate_trades(args.mode, start_date, end_date, args.initial_usd)
+    trades, equity_curve, data_source = load_trades(
+        args.mode, start_date, end_date, args.initial_usd,
+        db_path=getattr(args, "db_path", None),
+    )
+    print(f"Data source: {data_source} ({len(trades)} trades)")
 
     daily_returns = [
         (equity_curve[i + 1] - equity_curve[i]) / equity_curve[i]
@@ -164,6 +314,7 @@ def main() -> None:
 
     metrics: dict[str, Any] = {
         "mode": args.mode,
+        "data_source": data_source,
         "start_date": start_date.date().isoformat(),
         "end_date": end_date.date().isoformat(),
         "initial_usd": args.initial_usd,
