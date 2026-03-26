@@ -139,19 +139,22 @@ def _redact(text: str) -> str:
 
 
 class JsonFormatter(logging.Formatter):
-    """Structured JSON log formatter.
-
-    Produces one JSON object per log line with keys:
-    ``ts``, ``level``, ``logger``, ``msg``, and optionally ``exc``.
-    """
+    """Emit log records as single-line JSON matching WalletManagerLogRecord schema."""
 
     def format(self, record: logging.LogRecord) -> str:
-        payload: dict[str, str] = {
-            "ts": self.formatTime(record, "%Y-%m-%dT%H:%M:%S"),
+        import datetime as _dt
+        payload: dict[str, object] = {
+            "timestamp": _dt.datetime.utcfromtimestamp(record.created).strftime(
+                "%Y-%m-%dT%H:%M:%S.%f"
+            )[:-3] + "Z",
             "level": record.levelname,
             "logger": record.name,
-            "msg": record.getMessage(),
+            "message": record.getMessage(),
         }
+        for extra_field in ("wallet_id", "strategy", "tx_hash"):
+            val = getattr(record, extra_field, None)
+            if val is not None:
+                payload[extra_field] = str(val)
         if record.exc_info:
             payload["exc"] = self.formatException(record.exc_info)
         return json.dumps(payload, ensure_ascii=False)

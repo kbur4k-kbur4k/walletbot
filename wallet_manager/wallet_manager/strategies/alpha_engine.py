@@ -1611,19 +1611,22 @@ class EnsembleAlphaEngine:
         lstm_cal = self._platt_scale(lstm_up, "lstm")
         transformer_cal = self._platt_scale(transformer_up, "transformer")
 
-        # Compute weighted average using only active models
+        # Online logistic-regression meta-learner blend (falls back to weighted avg)
         try:
-            from wallet_manager.strategies.ensemble_weighter import get_singleton as _get_ew
-            _weights = _get_ew().get_weights()
-        except Exception:
-            _weights = {"xgb": ENSEMBLE_WEIGHT_XGB, "lgbm": ENSEMBLE_WEIGHT_LGBM,
-                        "lstm": ENSEMBLE_WEIGHT_LSTM, "transformer": ENSEMBLE_WEIGHT_TRANSFORMER}
-        _preds = {"xgb": xgb_cal, "lgbm": lgbm_cal, "lstm": lstm_cal, "transformer": transformer_cal}
-        _active_sum = sum(_weights[m] for m in _active if m in _weights)
-        if _active_sum > 0:
-            prob_up = sum(_preds[m] * _weights[m] for m in _active if m in _weights) / _active_sum
-        else:
-            prob_up = sum(_weights.get(m, 0.0) * _preds[m] for m in _preds)
+            from wallet_manager.strategies.stacking_meta_learner import get_meta_learner
+            blended_prob = get_meta_learner().predict(
+                xgb_prob=xgb_cal, lgbm_prob=lgbm_cal,
+                lstm_prob=lstm_cal, transformer_prob=transformer_cal,
+            )
+        except Exception as _ml_exc:
+            log.warning("Meta-learner predict failed, using weighted average: %s", _ml_exc)
+            blended_prob = (
+                ENSEMBLE_WEIGHT_XGB * xgb_cal
+                + ENSEMBLE_WEIGHT_LGBM * lgbm_cal
+                + ENSEMBLE_WEIGHT_LSTM * lstm_cal
+                + ENSEMBLE_WEIGHT_TRANSFORMER * transformer_cal
+            )
+        prob_up = blended_prob
 
         # Stacking meta-learner (regime-conditional)
         try:

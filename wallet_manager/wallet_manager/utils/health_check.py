@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+from dataclasses import dataclass
 
 import aiohttp
 
@@ -139,3 +141,80 @@ async def run_startup_health_checks(settings: object) -> list[str]:
         )
 
     return problems
+
+
+# ---------------------------------------------------------------------------
+# HTTP health-check handler classes (Task 6.2)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class _Response:
+    status: int
+    body: str
+    content_type: str = "application/json"
+
+
+class HealthCheck:
+    """Simple HTTP health-check handlers for /live, /ready, /metrics/summary."""
+
+    async def handle_live(self, request: object) -> _Response:
+        """/live — always 200 while the process is running."""
+        return _Response(status=200, body=json.dumps({"status": "ok"}))
+
+    async def handle_ready(self, request: object) -> _Response:
+        """/ready — 200 only when basic config looks sane, 503 otherwise."""
+        rpc_url = os.environ.get("RPC_URL_PRIMARY", "")
+        try:
+            from wallet_manager.config import get_settings
+            settings = get_settings()
+            wallets_path = getattr(settings, "wallets_file", "wallets.json")
+        except Exception:
+            wallets_path = "wallets.json"
+
+        wallet_count = 0
+        try:
+            import pathlib
+            p = pathlib.Path(wallets_path)
+            if p.exists():
+                data = json.loads(p.read_text())
+                wallet_count = len(data) if isinstance(data, list) else len(data.get("wallets", []))
+        except Exception:
+            pass
+
+        if rpc_url and wallet_count > 0:
+            return _Response(status=200, body=json.dumps({"status": "ready", "wallets": wallet_count}))
+        reasons = []
+        if not rpc_url:
+            reasons.append("RPC_URL_PRIMARY not set")
+        if wallet_count == 0:
+            reasons.append("no wallets configured")
+        return _Response(status=503, body=json.dumps({"status": "not_ready", "reasons": reasons}))
+
+    async def handle_metrics_summary(self, request: object) -> _Response:
+        """/metrics/summary — returns a lightweight portfolio snapshot."""
+        # Import shared state where available; fall back to safe defaults.
+        portfolio_value = 0.0
+        active_wallets = 0
+        last_cycle_ts = None
+        ml_confidence = None
+        execution_mode = "robust_paper"
+
+        try:
+            from wallet_manager import orchestrator as _orch
+            portfolio_value = float(getattr(_orch, "_portfolio_value_usd", 0.0))
+            active_wallets = int(getattr(_orch, "_active_wallet_count", 0))
+            last_cycle_ts = getattr(_orch, "_last_cycle_timestamp", None)
+            ml_confidence = getattr(_orch, "_ml_confidence_last", None)
+            execution_mode = getattr(_orch, "_execution_mode", "robust_paper")
+        except Exception:
+            pass
+
+        payload = {
+            "portfolio_value_usd": portfolio_value,
+            "active_wallets": active_wallets,
+            "last_cycle_timestamp": last_cycle_ts,
+            "ml_confidence_last": ml_confidence,
+            "current_execution_mode": execution_mode,
+        }
+        return _Response(status=200, body=json.dumps(payload))
