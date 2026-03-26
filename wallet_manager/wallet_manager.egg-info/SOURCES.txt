@@ -22,6 +22,8 @@ wallet_manager.egg-info/SOURCES.txt
 wallet_manager.egg-info/dependency_links.txt
 wallet_manager.egg-info/requires.txt
 wallet_manager.egg-info/top_level.txt
+wallet_manager/alerting/__init__.py
+wallet_manager/alerting/prometheus_webhook.py
 wallet_manager/core/__init__.py
 wallet_manager/core/interfaces.py
 wallet_manager/core/manager.py
