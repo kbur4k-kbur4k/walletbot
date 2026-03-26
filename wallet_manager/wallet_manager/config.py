@@ -385,6 +385,10 @@ class Settings:
     concept_drift_kl_retrain: float = 0.30
     concept_drift_kl_disable: float = 0.50
 
+    # --- Alertmanager webhook ------------------------------------------
+    alertmanager_webhook_enabled: bool = False
+    alertmanager_webhook_port: int = 9093
+
     # ------------------------------------------------------------------
     # Validation
     # ------------------------------------------------------------------
@@ -701,6 +705,9 @@ class Settings:
             airdrop_weight=_float("AIRDROP_WEIGHT", 0.15),
             monthly_injection_usd=_float("MONTHLY_INJECTION_USD", 150.0),
             rebalance_drift_threshold=_float("REBALANCE_DRIFT_THRESHOLD", 0.05),
+            # Alertmanager webhook
+            alertmanager_webhook_enabled=_bool("ALERTMANAGER_WEBHOOK_ENABLED", False),
+            alertmanager_webhook_port=_int("ALERTMANAGER_WEBHOOK_PORT", 9093),
         )
 
 

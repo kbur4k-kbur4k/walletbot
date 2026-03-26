@@ -11,6 +11,11 @@ services:
       - ./logs:/app/logs
     ports:
       - "9090:9090"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2g
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:9090/health"]
       interval: 30s
