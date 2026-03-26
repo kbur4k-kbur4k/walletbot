@@ -1,0 +1,10 @@
+[
+  {
+    "wallet_id": "wallet_01",
+    "address": "0xYOUR_WALLET_ADDRESS_HERE",
+    "encrypted_private_key": "ENCRYPTED_WITH_VAULT_KEY_SEE_README",
+    "label": "Main trading wallet",
+    "max_gas_price_gwei": 50.0,
+    "enabled": true
+  }
+]
