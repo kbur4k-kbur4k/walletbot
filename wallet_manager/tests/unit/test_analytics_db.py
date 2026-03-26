@@ -1,9 +1,12 @@
 """tests/unit/test_analytics_db.py — AnalyticsDB in-memory testleri."""
 from __future__ import annotations
+
 import asyncio
+
 import pytest
-from wallet_manager.resilience.analytics import AnalyticsDB, WalletSummary
+
 from wallet_manager.core.models import TxRecord, TxStatus
+from wallet_manager.resilience.analytics import AnalyticsDB, WalletSummary
 
 
 @pytest.fixture

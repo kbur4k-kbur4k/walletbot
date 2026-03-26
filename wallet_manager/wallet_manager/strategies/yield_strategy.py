@@ -326,6 +326,7 @@ class AaveAPYMonitor:
     async def poll_forever(self, rpc_url: str) -> None:
         """Async loop, runs every aave_apy_poll_interval_seconds."""
         import asyncio
+
         from wallet_manager.config import get_settings
 
         global apy_below_threshold

@@ -106,7 +106,7 @@ async def run_airdrop_strategy(
         return receipts
 
     config = manager.get_config(wallet_id)
-    from wallet_manager.orchestrator import GasMonitor  # Late import to avoid circular dep
+    from wallet_manager.network.gas_monitor import GasMonitor
 
     gas_monitor = GasMonitor(rpc_url=config.rpc_url)
     max_gwei = min(MAX_GWEI, float(config.max_gas_price_gwei))

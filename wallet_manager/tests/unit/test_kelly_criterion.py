@@ -1,15 +1,16 @@
 """tests/unit/test_kelly_criterion.py — KellyCriterion position sizing tests."""
 from __future__ import annotations
 
-import pytest
 from pathlib import Path
 
+import pytest
+
 from wallet_manager.strategies.kelly_criterion import (
-    KellyCriterion,
-    TradeResult,
+    KELLY_FRACTION,
     MAX_POSITION_PCT,
     MIN_TRADES_FOR_KELLY,
-    KELLY_FRACTION,
+    KellyCriterion,
+    TradeResult,
 )
 
 

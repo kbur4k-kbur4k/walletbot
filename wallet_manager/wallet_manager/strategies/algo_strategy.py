@@ -342,7 +342,7 @@ async def run_algo_strategy(
     Exit: Trailing Take-Profit (0.5% below peak after mean-cross) OR 3% stop-loss.
     Circuit Breaker: 5% daily drawdown halts all trades.
     """
-    from wallet_manager.orchestrator import GasMonitor
+    from wallet_manager.network.gas_monitor import GasMonitor
 
     # Circuit breaker: skip if 24h halt active (daily drawdown or stop-loss)
     command_state = task_context.get("command_state")

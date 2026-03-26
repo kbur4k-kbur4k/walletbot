@@ -1,8 +1,9 @@
 """tests/unit/test_tx_repair.py — TxRepairService state machine testleri."""
 from __future__ import annotations
-import pytest
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -166,8 +167,8 @@ class TestRBFBehavior:
     async def test_rbf_replacement_bumps_gas_by_minimum_10pct(self):
         """_build_and_send_rbf must produce a replacement with gas_price_wei
         at least 10% higher than the original (EIP-1559 RBF floor)."""
-        from wallet_manager.network.tx_repair import TxRepairService
         from wallet_manager.core.models import TxParams
+        from wallet_manager.network.tx_repair import TxRepairService
 
         original_gas_wei = 20_000_000_000  # 20 Gwei
         original_params = _make_tx_params(gas_price_wei=original_gas_wei)
@@ -211,8 +212,8 @@ class TestRBFBehavior:
     async def test_max_rbf_attempts_respected(self):
         """With max_rbf_attempts=2, watch_and_repair should trigger RBF at most
         2 times before raising TxStuckError."""
-        from wallet_manager.network.tx_repair import TxRepairService
         from wallet_manager.exceptions import TxStuckError
+        from wallet_manager.network.tx_repair import TxRepairService
 
         max_attempts = 2
         service = _make_service(
@@ -267,8 +268,8 @@ class TestRBFBehavior:
     async def test_tx_already_mined_skips_rbf(self):
         """If the receipt is available on the very first poll, no RBF must be
         attempted and watch_and_repair must return a MINED TxRecord."""
+        from wallet_manager.core.models import TxRecord, TxStatus
         from wallet_manager.network.tx_repair import TxRepairService
-        from wallet_manager.core.models import TxStatus, TxRecord
 
         service = _make_service(
             deadline_seconds=0.5,

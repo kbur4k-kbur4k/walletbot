@@ -15,22 +15,22 @@ Tested components (no RPC calls required):
 from __future__ import annotations
 
 import math
+
 import pytest
 
 from wallet_manager.strategies.liquidity_alpha import (
+    FALLBACK_LIQUIDITY_SCORE,
+    FALLBACK_SLIPPAGE_BPS,
+    THIN_LIQUIDITY_THRESHOLD,
     LiquidityAlpha,
     LiquidityProfile,
     PoolVolumeEstimator,
     SplitOrderEngine,
     TickData,
     TickLiquidityProfiler,
-    FALLBACK_LIQUIDITY_SCORE,
-    FALLBACK_SLIPPAGE_BPS,
-    THIN_LIQUIDITY_THRESHOLD,
-    tick_to_price,
     price_to_usd_depth,
+    tick_to_price,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

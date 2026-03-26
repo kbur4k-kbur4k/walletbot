@@ -18,11 +18,10 @@ import logging
 import pytest
 
 from wallet_manager.security.logging_filter import (
-    _SensitiveDataFilter,
     _redact,
+    _SensitiveDataFilter,
     build_logger,
 )
-
 
 # ---------------------------------------------------------------------------
 # _redact() — hex strings

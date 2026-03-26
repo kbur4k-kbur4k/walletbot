@@ -62,8 +62,8 @@ async def test_orchestrator_single_cycle_completes(
     minimal_wallet_config, mock_settings, mock_notifier
 ):
     """A single orchestrator cycle must complete without raising."""
-    from wallet_manager.telegram_notifier import CommandState, ConfirmationGate
     from wallet_manager.orchestrator import WalletOrchestrator
+    from wallet_manager.telegram_notifier import CommandState, ConfirmationGate
 
     command_state = CommandState()
     confirmation_gate = ConfirmationGate()
@@ -98,8 +98,8 @@ async def test_orchestrator_wallet_failure_does_not_cancel_others(
 ):
     """A failure in one wallet task must not prevent other wallets from running."""
     from wallet_manager.core.models import WalletConfig
-    from wallet_manager.telegram_notifier import CommandState, ConfirmationGate
     from wallet_manager.orchestrator import WalletOrchestrator
+    from wallet_manager.telegram_notifier import CommandState, ConfirmationGate
 
     wallet_ok = WalletConfig(
         wallet_id="wallet_ok",
@@ -147,8 +147,8 @@ async def test_orchestrator_graceful_shutdown(
     minimal_wallet_config, mock_settings,
 ):
     """SIGTERM (via command_state.stop()) causes the loop to exit cleanly."""
-    from wallet_manager.telegram_notifier import CommandState
     from wallet_manager.orchestrator import _setup_signal_handlers
+    from wallet_manager.telegram_notifier import CommandState
 
     command_state = CommandState()
     loop = asyncio.get_running_loop()

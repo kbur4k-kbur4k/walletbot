@@ -42,9 +42,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import random
+from collections.abc import Callable
 from functools import wraps
 from typing import Any
-from collections.abc import Callable
 
 import aiohttp
 
@@ -119,7 +119,7 @@ def async_retry(
 
                     # Full Jitter: uniform sample over [0, exponential cap]
                     cap: float = _delay * (2 ** (attempt - 1))
-                    delay: float = random.uniform(0.0, cap)  # noqa: S311
+                    delay: float = random.uniform(0.0, cap)
 
                     log.warning(
                         f"{func.__qualname__} | attempt {attempt}/{_max} failed ({type(exc).__name__}: {exc}). "

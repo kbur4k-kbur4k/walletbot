@@ -1,13 +1,15 @@
 """tests/unit/test_regime_filter.py — GaussianHMM ve RegimeFilter testleri."""
 from __future__ import annotations
+
 import numpy as np
 import pytest
+
 from wallet_manager.strategies.regime_filter import (
+    EconomicCalendar,
     GaussianHMM,
     MarketRegime,
     RegimeFilter,
     RegimeSignal,
-    EconomicCalendar,
 )
 
 

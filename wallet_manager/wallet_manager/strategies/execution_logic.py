@@ -35,7 +35,6 @@ from wallet_manager import actions
 from wallet_manager.core.models import TxReceipt, TxRecord, TxStatus
 from wallet_manager.portfolio_manager import StrategyType
 from wallet_manager.security.logging_filter import build_logger
-
 from wallet_manager.strategies.alpha_engine import (
     AlphaMLSignal,
     get_alpha_engine,
@@ -44,20 +43,22 @@ from wallet_manager.strategies.deep_kelly_risk import (
     TradeOutcome,
     get_deep_kelly_engine,
 )
-from wallet_manager.strategies.smart_order_router import (
-    get_smart_order_router,
-)
-from wallet_manager.strategies.mev_shield import (
-    get_mev_shield,
+from wallet_manager.strategies.flash_crash_detector import (
+    activate_kill_switch,
+    send_kill_switch_alert,
 )
 from wallet_manager.strategies.flash_crash_detector import (
     get_detector as get_crash_detector,
-    send_kill_switch_alert,
-    activate_kill_switch,
 )
 from wallet_manager.strategies.idle_sweep import run_idle_sweep
 from wallet_manager.strategies.kelly_criterion import RegimeAwareKelly
+from wallet_manager.strategies.mev_shield import (
+    get_mev_shield,
+)
 from wallet_manager.strategies.regime_filter import get_regime_filter
+from wallet_manager.strategies.smart_order_router import (
+    get_smart_order_router,
+)
 
 if TYPE_CHECKING:
     from wallet_manager.core.manager import WalletManager
@@ -200,7 +201,7 @@ class MLQuantExecutionEngine:
         7. Post-trade analytics (TCA)
         8. Idle capital sweep (Zero-Lazy-Capital)
         """
-        from wallet_manager.orchestrator import GasMonitor
+        from wallet_manager.network.gas_monitor import GasMonitor
 
         self._cycle_count += 1
         cycle_start = time.time()
@@ -375,7 +376,8 @@ class MLQuantExecutionEngine:
         # ==============================================================
         try:
             from wallet_manager.strategies.regime_filter import (
-                get_regime_filter, MarketRegime,
+                MarketRegime,
+                get_regime_filter,
             )
             _rf2 = get_regime_filter()
             _regime_sig2 = _rf2.get_current_regime()
@@ -459,10 +461,11 @@ class MLQuantExecutionEngine:
             )
         elif should_short:
             try:
-                from wallet_manager.strategies.short_strategy import run_short_strategy
                 from wallet_manager.strategies.algo_strategy import (
-                    compute_rsi, compute_bollinger_bands,
+                    compute_bollinger_bands,
+                    compute_rsi,
                 )
+                from wallet_manager.strategies.short_strategy import run_short_strategy
                 prices = self.alpha.feature_engineer._prices
                 p_list = list(prices)
                 rsi = compute_rsi(p_list) if len(p_list) > 15 else 50.0
@@ -723,6 +726,7 @@ class MLQuantExecutionEngine:
         # Record to trade journal
         try:
             import datetime
+
             from wallet_manager.trade_journal import TradeRecord, get_trade_journal
             _dd_entry = getattr(self.risk.drawdown, "_last_drawdown", 0.0)
             _dd_exit = getattr(self.risk.drawdown, "current_drawdown", 0.0)

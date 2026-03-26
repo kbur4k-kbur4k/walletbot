@@ -90,7 +90,7 @@ class _SensitiveDataFilter(logging.Filter):
             logger.addFilter(_SensitiveDataFilter())
     """
 
-    def filter(self, record: logging.LogRecord) -> bool:  # noqa: A003
+    def filter(self, record: logging.LogRecord) -> bool:
         """Redact hex strings from *record* in place.
 
         Processes both ``record.msg`` and every element of ``record.args``

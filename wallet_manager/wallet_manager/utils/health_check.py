@@ -33,22 +33,21 @@ async def check_rpc_connectivity(rpc_url: str, timeout: float = 5.0) -> bool:
     try:
         async with aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=timeout)
-        ) as session:
-            async with session.post(
-                rpc_url,
-                json=payload,
-                headers={"Content-Type": "application/json"},
-            ) as resp:
-                if resp.status != 200:
-                    log.warning("health_check: RPC %s returned HTTP %s", rpc_url[:40], resp.status)
-                    return False
-                data = await resp.json(content_type=None)
-                result = data.get("result")
-                if result and isinstance(result, str) and result.startswith("0x"):
-                    log.debug("health_check: RPC %s OK (block %s)", rpc_url[:40], int(result, 16))
-                    return True
-                log.warning("health_check: RPC %s unexpected result: %s", rpc_url[:40], result)
+        ) as session, session.post(
+            rpc_url,
+            json=payload,
+            headers={"Content-Type": "application/json"},
+        ) as resp:
+            if resp.status != 200:
+                log.warning("health_check: RPC %s returned HTTP %s", rpc_url[:40], resp.status)
                 return False
+            data = await resp.json(content_type=None)
+            result = data.get("result")
+            if result and isinstance(result, str) and result.startswith("0x"):
+                log.debug("health_check: RPC %s OK (block %s)", rpc_url[:40], int(result, 16))
+                return True
+            log.warning("health_check: RPC %s unexpected result: %s", rpc_url[:40], result)
+            return False
     except Exception as exc:
         log.warning("health_check: RPC %s unreachable: %s", rpc_url[:40], type(exc).__name__)
         return False
@@ -80,21 +79,20 @@ async def check_aave_contract_accessibility(rpc_url: str, chain_id: int) -> bool
     try:
         async with aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=10.0)
-        ) as session:
-            async with session.post(
-                rpc_url,
-                json=payload,
-                headers={"Content-Type": "application/json"},
-            ) as resp:
-                if resp.status != 200:
-                    return False
-                data = await resp.json(content_type=None)
-                result = data.get("result", "")
-                # A non-empty hex response means the contract responded
-                if result and result != "0x":
-                    log.debug("health_check: Aave V3 Pool accessible on %s", rpc_url[:40])
-                    return True
+        ) as session, session.post(
+            rpc_url,
+            json=payload,
+            headers={"Content-Type": "application/json"},
+        ) as resp:
+            if resp.status != 200:
                 return False
+            data = await resp.json(content_type=None)
+            result = data.get("result", "")
+            # A non-empty hex response means the contract responded
+            if result and result != "0x":
+                log.debug("health_check: Aave V3 Pool accessible on %s", rpc_url[:40])
+                return True
+            return False
     except Exception as exc:
         log.warning(
             "health_check: Aave contract check failed on %s: %s",

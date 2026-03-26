@@ -149,6 +149,7 @@ wallet_manager/
 ├── network/
 │   ├── router.py            RPCRouter with startup health probe + latency scoring
 │   ├── balance_provider.py  ETH/ERC-20 balance fetchers
+│   ├── gas_monitor.py       GasMonitor — async gas price poller (eth_gasPrice)
 │   ├── tx_broadcaster.py    Transaction signing and submission
 │   └── tx_repair.py         RBF replace-by-fee loop
 │
@@ -231,7 +232,7 @@ pip install -e ".[dev]"
 ## Running Tests
 
 ```bash
-pytest tests/ -v --cov=wallet_manager --cov-report=term-missing --cov-fail-under=75
+pytest tests/ -v --cov=wallet_manager --cov-report=term-missing --cov-fail-under=85
 ```
 
 ---
@@ -248,10 +249,10 @@ pytest tests/ -v --cov=wallet_manager --cov-report=term-missing --cov-fail-under
 
 ### Test Requirement
 
-All pull requests must include tests for new or modified code. The test suite must pass with at least 75% coverage (`--cov-fail-under=75`). Run tests locally before pushing:
+All pull requests must include tests for new or modified code. The test suite must pass with at least 85% coverage (`--cov-fail-under=85`). Run tests locally before pushing:
 
 ```bash
-pytest tests/ -v --cov=wallet_manager --cov-report=term-missing --cov-fail-under=75
+pytest tests/ -v --cov=wallet_manager --cov-report=term-missing --cov-fail-under=85
 ```
 
 ### Lint Requirement

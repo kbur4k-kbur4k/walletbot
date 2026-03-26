@@ -18,9 +18,9 @@ Pure NumPy, no sklearn.  Vectorized Monte Carlo inner loop.
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Final
-from collections.abc import Callable
 
 import numpy as np
 
@@ -228,11 +228,11 @@ class MonteCarloEngine:
         current_price: float = 0.0,
         signal_alpha: float = 0.5,
         signal_direction: int = 1,
-        price_history: "np.ndarray | list | None" = None,
-        predict_fn: "Callable | None" = None,
+        price_history: np.ndarray | list | None = None,
+        predict_fn: Callable | None = None,
         # Simplified API aliases
-        prices: "np.ndarray | list | None" = None,
-        n_simulations: "int | None" = None,
+        prices: np.ndarray | list | None = None,
+        n_simulations: int | None = None,
     ) -> MonteCarloResult:
         """Run the full Monte Carlo stress test on an alpha signal."""
         ts = time.time()
@@ -603,14 +603,14 @@ class StochasticStressTester:
         current_price: float = 0.0,
         signal_alpha: float = 0.5,
         signal_direction: int = 1,
-        price_history: "np.ndarray | list | None" = None,
-        feature_matrix: "np.ndarray | None" = None,
-        targets: "np.ndarray | None" = None,
-        feature_names: "tuple[str, ...] | list[str] | None" = None,
-        regime_labels: "np.ndarray | None" = None,
+        price_history: np.ndarray | list | None = None,
+        feature_matrix: np.ndarray | None = None,
+        targets: np.ndarray | None = None,
+        feature_names: tuple[str, ...] | list[str] | None = None,
+        regime_labels: np.ndarray | None = None,
         # Simplified API aliases
-        prices: "np.ndarray | list | None" = None,
-        signals: "list | np.ndarray | None" = None,
+        prices: np.ndarray | list | None = None,
+        signals: list | np.ndarray | None = None,
     ) -> StressTestVerdict:
         """Validate an alpha signal through the chaos gauntlet."""
         # Support simplified API: prices=..., signals=...

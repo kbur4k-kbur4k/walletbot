@@ -44,6 +44,7 @@ import json
 import math
 import time
 from dataclasses import dataclass
+from datetime import UTC
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -51,7 +52,6 @@ import aiosqlite
 import numpy as np
 
 from wallet_manager.security.logging_filter import build_logger
-from datetime import UTC
 
 if TYPE_CHECKING:
     from wallet_manager.core.manager import WalletManager
@@ -341,7 +341,7 @@ class GasEstimator:
             if now - self._cache_timestamp < GAS_CACHE_TTL_S and self._cached_gas_gwei > 0:
                 return
             try:
-                from web3 import AsyncWeb3, AsyncHTTPProvider
+                from web3 import AsyncHTTPProvider, AsyncWeb3
                 w3 = AsyncWeb3(AsyncHTTPProvider(rpc_url))
                 gas_price_wei = await w3.eth.gas_price
                 self._cached_gas_gwei = float(gas_price_wei) / 1e9

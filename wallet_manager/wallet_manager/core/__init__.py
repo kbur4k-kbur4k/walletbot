@@ -11,13 +11,13 @@ from wallet_manager.core.manager import WalletManager
 from wallet_manager.core.models import TxParams, TxReceipt, WalletConfig
 
 __all__ = [
-    "WalletManager",
-    "WalletConfig",
+    "IBalanceProvider",
+    "ICircuitBreaker",
+    "ICooldown",
+    "ITxBroadcaster",
+    "IVault",
     "TxParams",
     "TxReceipt",
-    "IVault",
-    "ICooldown",
-    "IBalanceProvider",
-    "ITxBroadcaster",
-    "ICircuitBreaker",
+    "WalletConfig",
+    "WalletManager",
 ]

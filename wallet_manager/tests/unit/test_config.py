@@ -1,8 +1,8 @@
 """tests/unit/test_config.py — Settings and get_settings() tests."""
 from __future__ import annotations
 
-import os
 import importlib
+import os
 
 import pytest
 

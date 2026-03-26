@@ -69,13 +69,14 @@ from wallet_manager.exceptions import (
     GasPriceTooHighError,
     WalletManagerError,
 )
+from wallet_manager.network.gas_monitor import GasMonitor
 from wallet_manager.portfolio_manager import (
     PortfolioManager,
     StrategyType,
 )
 from wallet_manager.scheduler import SchedulerManager, should_run_swap_this_cycle
-from wallet_manager.telegram_notifier import StatusProvider
 from wallet_manager.security.logging_filter import build_logger
+from wallet_manager.telegram_notifier import StatusProvider
 
 log = build_logger(__name__)
 
@@ -103,7 +104,7 @@ del _cfg_snapshot  # avoid polluting module namespace with mutable reference
 # ProactiveAlerter singleton — created once at module load
 try:
     from wallet_manager.telegram_notifier import ProactiveAlerter as _ProactiveAlerter
-    _proactive_alerter: "_ProactiveAlerter | None" = _ProactiveAlerter()
+    _proactive_alerter: _ProactiveAlerter | None = _ProactiveAlerter()
     log.info("ProactiveAlerter: initialized.")
 except Exception as _pa_exc:
     _proactive_alerter = None
@@ -205,9 +206,10 @@ async def _validate_startup_config() -> None:
     _exec_mode = cfg.execution_mode
     if _exec_mode in ("ml_quant", "robust", "robust_live"):
         try:
+            import asyncio as _asyncio
+
             from wallet_manager.exceptions import ConfigurationError as _CE
             from wallet_manager.strategies.paper_engine import get_paper_engine
-            import asyncio as _asyncio
             _pe = await get_paper_engine()
             _pnl = await _pe._ledger.get_pnl_summary()
             _paper_trades = _pnl.get("trade_count", 0)
@@ -323,51 +325,9 @@ async def _migrate_wallets_to_vault(
 
 
 # ---------------------------------------------------------------------------
-# Gas monitor
+# Gas monitor — GasMonitor class is defined in wallet_manager.network.gas_monitor
+# and re-exported here for backward compatibility.
 # ---------------------------------------------------------------------------
-
-
-class GasMonitor:
-    """Async gas price monitor using the RPC endpoint of a reference wallet.
-
-    Polls ``eth_gasPrice`` via web3.py and compares against a configurable
-    ceiling.  Stateless between calls — each :meth:`current_gwei` invocation
-    fires a fresh RPC request.
-
-    Args:
-        rpc_url: JSON-RPC endpoint used for gas price queries.
-    """
-
-    def __init__(self, rpc_url: str) -> None:
-        self._rpc_url = rpc_url
-
-    async def current_gwei(self) -> float:
-        """Fetch the current network gas price in Gwei.
-
-        Returns:
-            Gas price as a float in Gwei.
-
-        Raises:
-            Exception: Propagates web3 / network errors to the caller.
-        """
-        from web3 import AsyncWeb3
-
-        w3 = AsyncWeb3(AsyncWeb3.AsyncHTTPProvider(self._rpc_url))
-        wei: int = await w3.eth.gas_price
-        return wei / 1e9
-
-    async def is_safe(self, max_gwei: float) -> tuple[bool, float]:
-        """Check whether the current gas price is within the safe ceiling.
-
-        Args:
-            max_gwei: Maximum acceptable gas price in Gwei.
-
-        Returns:
-            A ``(safe, current_gwei)`` tuple where ``safe`` is ``True``
-            if the current price is ≤ *max_gwei*.
-        """
-        current = await self.current_gwei()
-        return current <= max_gwei, current
 
 
 # ---------------------------------------------------------------------------
@@ -619,7 +579,7 @@ class WalletOrchestrator:
                 _adb = AnalyticsDB()
                 await _adb.open()
                 analytics_db = _adb
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 log.info(f"AnalyticsDB unavailable ({type(exc).__name__}), continuing without analytics.")
 
             try:
@@ -752,7 +712,7 @@ class WalletOrchestrator:
                         fail_count=len(results) - sc,
                     )
                     await analytics_db.close()
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     log.info(f"AnalyticsDB close: {type(exc).__name__}: {exc}")
 
             # --- Heartbeat every 6 hours (MasterOrchestrator handles) ---
@@ -904,7 +864,7 @@ class WalletOrchestrator:
                     duration_seconds=time.monotonic() - start_time,
                 )
 
-            except Exception as exc:  # noqa: BLE001 — broad catch intentional for isolation
+            except Exception as exc:
                 reason = f"Unexpected error: {type(exc).__name__}: {exc}"
                 log.exception(f"Wallet '{wallet_id}' raised unhandled exception.")
                 await self._safe_notify(
@@ -1033,7 +993,7 @@ class WalletOrchestrator:
         """
         try:
             await notifier.send(event)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             log.info(
                 f"Notification for {event.kind.name} skipped: {type(exc).__name__}: {exc}",
             )
@@ -1248,8 +1208,9 @@ def validate_wallets_schema(data: list[dict]) -> None:
     On validation failure:
       Raise ConfigurationError with all accumulated errors.
     """
-    import re as _re
     import base64 as _base64
+    import re as _re
+
     from wallet_manager.exceptions import ConfigurationError
 
     _WALLET_ID_RE = _re.compile(r"^[a-zA-Z0-9_-]+$")
@@ -1280,6 +1241,7 @@ def validate_wallets_schema(data: list[dict]) -> None:
             if addr_str.startswith("0x") and len(addr_str) == 42:
                 try:
                     import contextlib as _cl
+
                     # Try web3 checksum validation if available
                     from web3 import Web3
                     if Web3.is_checksum_address(addr_str):
@@ -1290,7 +1252,7 @@ def validate_wallets_schema(data: list[dict]) -> None:
                         )
                 except ImportError:
                     valid_addr = True  # web3 not available, accept any 0x-prefixed 42-char address
-            if not valid_addr and not errors or (errors and "checksummed" not in errors[-1] if errors else True):
+            if (not valid_addr and not errors) or (errors and "checksummed" not in errors[-1] if errors else True):
                 if not (addr_str.startswith("0x") and len(addr_str) == 42):
                     errors.append(
                         f"wallet '{masked_wid}': 'address' must be a 42-char 0x-prefixed hex string"
@@ -1390,17 +1352,17 @@ def _load_wallet_configs() -> list[WalletConfig]:
 
 
 from wallet_manager.task_factories import (
+    _airdrop_task_factory,
+    _collect_alerter_inputs,
     _default_task_factory,
-    _robust_paper_task_factory,
-    _robust_task_factory,
+    _execute_eth_to_usdc,
+    _execute_usdc_to_eth,
+    _get_wallet_address,
     _ml_quant_task_factory,
     _quantx_task_factory,
+    _robust_paper_task_factory,
+    _robust_task_factory,
     _three_pillar_task_factory,
-    _airdrop_task_factory,
-    _execute_usdc_to_eth,
-    _execute_eth_to_usdc,
-    _get_wallet_address,
-    _collect_alerter_inputs,
 )
 
 # ---------------------------------------------------------------------------

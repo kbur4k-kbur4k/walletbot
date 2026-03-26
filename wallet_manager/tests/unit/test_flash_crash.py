@@ -1,7 +1,10 @@
 """tests/unit/test_flash_crash.py — FlashCrashDetector kapsamlı testler."""
 from __future__ import annotations
+
 import time
+
 import pytest
+
 from wallet_manager.strategies.flash_crash_detector import FlashCrashDetector
 
 

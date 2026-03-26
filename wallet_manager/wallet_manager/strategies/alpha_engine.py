@@ -1441,8 +1441,8 @@ class EnsembleAlphaEngine:
         self._lstm = lstm
         self._transformer = transformer
         # Platt: A=-1, B=0 → sigmoid(-logit(p)) = p (identity when A≈-1, B≈0)
-        self._platt_A = {k: -1.0 for k in self._MODEL_KEYS}
-        self._platt_B = {k: 0.0 for k in self._MODEL_KEYS}
+        self._platt_A = dict.fromkeys(self._MODEL_KEYS, -1.0)
+        self._platt_B = dict.fromkeys(self._MODEL_KEYS, 0.0)
         # Stacking meta-learner (loaded lazily from ml_models/meta_learner_*.pkl)
         self._stacker = StackingMetaLearner()
 

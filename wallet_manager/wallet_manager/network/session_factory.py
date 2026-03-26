@@ -25,7 +25,7 @@ class SessionFactory:
     # Per-wallet session registry (class-level, shared across all callers)
     _sessions: dict[str, aiohttp.ClientSession] = {}
     # Lock is created lazily inside a running event loop
-    _lock: Optional[asyncio.Lock] = None
+    _lock: asyncio.Lock | None = None
 
     @staticmethod
     def build(
@@ -148,7 +148,7 @@ class SessionFactory:
             User-Agent string in a common browser format.
         """
         uid_hash = hashlib.sha256(wallet_id.encode("utf-8")).hexdigest()[:8]
-        version = random.randint(  # noqa: S311
+        version = random.randint(
             SessionFactory._UA_VERSION_MIN,
             SessionFactory._UA_VERSION_MAX,
         )

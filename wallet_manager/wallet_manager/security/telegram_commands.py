@@ -79,7 +79,7 @@ class _MessageFormatter:
     )
 
     @staticmethod
-    def format(event: NotificationEvent) -> str:  # noqa: A003
+    def format(event: NotificationEvent) -> str:
         """Render *event* as a MarkdownV2-safe Telegram message.
 
         Args:
@@ -913,7 +913,7 @@ class CommandCenter:
     async def _handle_wallets(self, chat_id: str) -> None:
         """Show summary of all active wallets."""
         try:
-            from wallet_manager.orchestrator import _get_wallet_configs, _get_circuit_breakers
+            from wallet_manager.orchestrator import _get_circuit_breakers, _get_wallet_configs
             wallets = _get_wallet_configs() or []
             cbs = _get_circuit_breakers() or {}
 
@@ -1030,9 +1030,10 @@ class CommandCenter:
             )
             return
         try:
-            from wallet_manager.resilience.analytics import AnalyticsDB
-            from wallet_manager.config import get_settings
             import datetime
+
+            from wallet_manager.config import get_settings
+            from wallet_manager.resilience.analytics import AnalyticsDB
             cfg = get_settings()
             db = AnalyticsDB(str(cfg.quant_analytics_db_path))
 
@@ -1119,8 +1120,8 @@ class CommandCenter:
 
         # Aave APY
         try:
-            from wallet_manager.strategies.yield_strategy import get_apy_monitor
             from wallet_manager.config import get_settings
+            from wallet_manager.strategies.yield_strategy import get_apy_monitor
             cfg = get_settings()
             min_apy = cfg.yield_min_apy_pct
             _rpc = self._status_provider._configs[0].rpc_url if self._status_provider._configs else ""
@@ -1182,12 +1183,13 @@ class CommandCenter:
             return
 
         try:
-            from wallet_manager.security.vault_manager import get_vault_manager
-            from wallet_manager.config import get_settings
             import pathlib
 
             # Validate new key by constructing a Vault instance with it temporarily
             from cryptography.fernet import Fernet
+
+            from wallet_manager.config import get_settings
+            from wallet_manager.security.vault_manager import get_vault_manager
             Fernet(key_value.encode("utf-8"))  # raises if invalid
 
             # Update the environment / settings (in-memory only)

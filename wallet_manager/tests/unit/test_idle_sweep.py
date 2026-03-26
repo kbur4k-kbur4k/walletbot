@@ -1,7 +1,10 @@
 """tests/unit/test_idle_sweep.py — IdleSweep testleri."""
 from __future__ import annotations
+
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+
 from wallet_manager.strategies.idle_sweep import run_idle_sweep
 
 
@@ -21,7 +24,7 @@ class TestIdleSweep:
             "wallet_manager.strategies.idle_sweep.actions.fetch_usdc_balance",
             new=AsyncMock(return_value=int(0.5e6)),  # $0.50 — çok düşük
         ), patch(
-            "wallet_manager.orchestrator.GasMonitor"
+            "wallet_manager.network.gas_monitor.GasMonitor"
         ) as MockGasMonitor:
             gas_instance = MagicMock()
             gas_instance.is_safe = AsyncMock(return_value=(True, 3.0))
@@ -64,7 +67,7 @@ class TestIdleSweep:
             "wallet_manager.strategies.idle_sweep.actions.get_aave_account_data",
             new=AsyncMock(return_value={"health_factor": 10.0, "total_debt_usd": 0.0}),
         ), patch(
-            "wallet_manager.orchestrator.GasMonitor"
+            "wallet_manager.network.gas_monitor.GasMonitor"
         ) as MockGasMonitor, patch(
             "wallet_manager.strategies.yield_strategy.actions.build_aave_supply_usdc_plan",
             new=AsyncMock(return_value=[(fake_tx, "supply")]),
@@ -107,8 +110,8 @@ class TestRunIdleSweepActualAPI:
         supply_usdc internally calls sign_and_broadcast_tx once per step.
         build_aave_supply_usdc_plan returns a single-step plan here.
         """
-        from wallet_manager.strategies.yield_strategy import supply_usdc
         from wallet_manager.core.models import TxParams
+        from wallet_manager.strategies.yield_strategy import supply_usdc
 
         manager, config, _, gwei, _ = _make_base_manager()
 
@@ -128,7 +131,7 @@ class TestRunIdleSweepActualAPI:
             "wallet_manager.strategies.idle_sweep.actions.get_aave_account_data",
             new=AsyncMock(return_value={"health_factor": 10.0, "total_debt_usd": 0.0}),
         ), patch(
-            "wallet_manager.orchestrator.GasMonitor"
+            "wallet_manager.network.gas_monitor.GasMonitor"
         ) as MockGasMonitor, patch(
             "wallet_manager.strategies.yield_strategy.actions.build_aave_supply_usdc_plan",
             new=AsyncMock(return_value=[(fake_tx, "supply")]),
@@ -152,7 +155,7 @@ class TestRunIdleSweepActualAPI:
         manager, _, _, _, _ = _make_base_manager()
 
         with patch(
-            "wallet_manager.orchestrator.GasMonitor"
+            "wallet_manager.network.gas_monitor.GasMonitor"
         ) as MockGasMonitor:
             gas_instance = MagicMock()
             gas_instance.is_safe = AsyncMock(return_value=(False, 50.0))  # too high
@@ -208,7 +211,7 @@ class TestRunIdleSweepActualAPI:
             "wallet_manager.strategies.idle_sweep.actions.get_aave_account_data",
             new=AsyncMock(return_value={"health_factor": 5.0, "total_debt_usd": 0.0}),
         ), patch(
-            "wallet_manager.orchestrator.GasMonitor"
+            "wallet_manager.network.gas_monitor.GasMonitor"
         ) as MockGasMonitor, patch(
             "wallet_manager.strategies.yield_strategy.actions.build_aave_supply_usdc_plan",
             new=AsyncMock(return_value=[(fake_tx, "supply")]),
@@ -237,7 +240,7 @@ class TestRunIdleSweepActualAPI:
             # $20 buffer + need $5 min = $25 total needed; $10 is below that
             new=AsyncMock(return_value=int(10e6)),
         ), patch(
-            "wallet_manager.orchestrator.GasMonitor"
+            "wallet_manager.network.gas_monitor.GasMonitor"
         ) as MockGasMonitor:
             gas_instance = MagicMock()
             gas_instance.is_safe = AsyncMock(return_value=(True, gwei))

@@ -5,8 +5,8 @@ import asyncio
 
 import pytest
 
-from wallet_manager.resilience.retry import async_retry
 from wallet_manager.exceptions import MaxRetriesExceededError
+from wallet_manager.resilience.retry import async_retry
 
 
 @pytest.mark.asyncio

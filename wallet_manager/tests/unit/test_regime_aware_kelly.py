@@ -1,5 +1,6 @@
 """Tests for RegimeAwareKelly position sizing."""
 import pytest
+
 from wallet_manager.strategies.kelly_criterion import RegimeAwareKelly
 
 

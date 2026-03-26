@@ -172,7 +172,7 @@ class SchedulerManager:
         """Schedule first run for a new wallet: 120-300 seconds from now."""
         t = now if now is not None else time.time()
         self._ensure_loaded()
-        offset = random.uniform(FIRST_RUN_MIN_SECONDS, FIRST_RUN_MAX_SECONDS)  # noqa: S311
+        offset = random.uniform(FIRST_RUN_MIN_SECONDS, FIRST_RUN_MAX_SECONDS)
         next_run = t + offset
         self._cache[wallet_id] = {
             "last_completed_epoch": 0.0,
@@ -188,7 +188,7 @@ class SchedulerManager:
         """Set next_run to a random time within the next week."""
         t = now if now is not None else time.time()
         self._ensure_loaded()
-        offset = random.uniform(3600, WEEK_SECONDS)  # noqa: S311
+        offset = random.uniform(3600, WEEK_SECONDS)
         next_run = t + offset
         entry = self._cache.get(wallet_id) or {}
         entry["last_completed_epoch"] = t
@@ -208,7 +208,7 @@ class SchedulerManager:
         """
         t = now if now is not None else time.time()
         self._ensure_loaded()
-        offset = random.uniform(GAS_DEFER_MIN_SECONDS, GAS_DEFER_MAX_SECONDS)  # noqa: S311
+        offset = random.uniform(GAS_DEFER_MIN_SECONDS, GAS_DEFER_MAX_SECONDS)
         next_run = t + offset
         entry = self._cache.get(wallet_id) or {}
         entry["next_run_epoch"] = next_run

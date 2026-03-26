@@ -187,7 +187,7 @@ def _gas_safe_patches(price: float = 2000.0, gas_gwei: float = 5.0, safe: bool =
             return safe, gas_gwei
 
     return [
-        patch("wallet_manager.orchestrator.GasMonitor", _SafeGasMonitor),
+        patch("wallet_manager.network.gas_monitor.GasMonitor", _SafeGasMonitor),
         patch("wallet_manager.strategies.execution_logic.actions.get_live_price_v3",
               AsyncMock(return_value=price)),
         patch("wallet_manager.strategies.execution_logic.actions.get_weth_usdc_price",
@@ -468,7 +468,7 @@ class TestHaltOnDrawdown:
         pm = _make_pm()
         ctx = _make_ctx()
 
-        with patch("wallet_manager.orchestrator.GasMonitor", _HighGasMonitor):
+        with patch("wallet_manager.network.gas_monitor.GasMonitor", _HighGasMonitor):
             result = await engine.run_cycle(
                 manager=manager,
                 wallet_id="w1",

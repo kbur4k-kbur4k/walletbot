@@ -1,8 +1,9 @@
 """tests/unit/test_portfolio_manager.py — PortfolioManager tests."""
 from __future__ import annotations
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 
 from wallet_manager.portfolio_manager import PortfolioManager, StrategyType
 

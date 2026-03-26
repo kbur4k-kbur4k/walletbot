@@ -47,7 +47,7 @@ class _WalletContext:
         nonce_lock: Per-wallet lock that serialises concurrent nonce fetches.
     """
 
-    __slots__ = ("config", "session", "breaker", "nonce_lock")
+    __slots__ = ("breaker", "config", "nonce_lock", "session")
 
     def __init__(
         self,

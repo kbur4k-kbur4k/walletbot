@@ -1,7 +1,9 @@
 """tests/unit/test_signal_intelligence.py — Kapsamlı sinyal testleri."""
 from __future__ import annotations
+
 import numpy as np
 import pytest
+
 from wallet_manager.strategies.signal_intelligence import (
     CrossVenueArbitrageDetector,
     OnChainMetricsSignal,

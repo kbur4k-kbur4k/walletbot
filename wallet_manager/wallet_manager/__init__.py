@@ -18,8 +18,8 @@ from wallet_manager.core.manager import WalletManager
 from wallet_manager.core.models import TxParams, TxReceipt, WalletConfig
 
 __all__ = [
-    "WalletManager",
-    "WalletConfig",
     "TxParams",
     "TxReceipt",
+    "WalletConfig",
+    "WalletManager",
 ]

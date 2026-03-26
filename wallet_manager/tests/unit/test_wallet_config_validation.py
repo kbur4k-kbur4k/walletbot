@@ -6,9 +6,8 @@ from __future__ import annotations
 
 import pytest
 
-from wallet_manager.orchestrator import validate_wallets_schema
 from wallet_manager.exceptions import ConfigurationError
-
+from wallet_manager.orchestrator import validate_wallets_schema
 
 _VALID_WALLET = {
     "wallet_id": "wallet_01",

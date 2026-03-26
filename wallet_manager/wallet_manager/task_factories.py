@@ -139,7 +139,7 @@ async def _default_task_factory(
     fetches balance, then sleeps. Configurable via DEFAULT_TASK_LOOP_CYCLES.
     Replace with your own task_factory for production transactions.
     """
-    from wallet_manager.orchestrator import GasMonitor
+    from wallet_manager.network.gas_monitor import GasMonitor
 
     config = manager.get_config(wallet_id)
     gas_monitor = GasMonitor(rpc_url=config.rpc_url)
@@ -157,7 +157,7 @@ async def _default_task_factory(
 
         try:
             await manager.get_safe_balance(wallet_id)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             log.info(f"Wallet '{wallet_id}' cycle {cycle + 1}: balance fetch skipped ({type(exc).__name__})")
             continue
 
@@ -181,12 +181,13 @@ async def _robust_paper_task_factory(
 
     EXECUTION_MODE=robust_paper activates this factory.
     """
-    from wallet_manager.strategies.paper_engine import get_paper_engine
-    from wallet_manager.strategies.stochastic_stress_test import get_stress_tester
+    from wallet_manager.network.gas_monitor import GasMonitor
+    from wallet_manager.orchestrator import send_heartbeat_telemetry
     from wallet_manager.strategies.latency_shield import get_latency_shield
+    from wallet_manager.strategies.paper_engine import get_paper_engine
     from wallet_manager.strategies.regime_filter import get_regime_filter
     from wallet_manager.strategies.robust_alpha import get_robust_alpha_engine
-    from wallet_manager.orchestrator import GasMonitor, send_heartbeat_telemetry
+    from wallet_manager.strategies.stochastic_stress_test import get_stress_tester
 
     ctx = task_context or {}
     portfolio_manager = ctx.get("portfolio_manager")
@@ -341,15 +342,16 @@ async def _robust_task_factory(
 
     EXECUTION_MODE=robust or robust_live activates this factory.
     """
-    from wallet_manager.strategies.robust_alpha import get_robust_alpha_engine
-    from wallet_manager.strategies.regime_filter import get_regime_filter
-    from wallet_manager.strategies.liquidity_alpha import get_liquidity_alpha
-    from wallet_manager.strategies.wf_validator import get_wf_validator
+    from wallet_manager.network.gas_monitor import GasMonitor
+    from wallet_manager.orchestrator import send_heartbeat_telemetry
     from wallet_manager.strategies.execution_logic import get_ml_execution_engine
-    from wallet_manager.strategies.quant_analytics import get_quant_analytics
-    from wallet_manager.strategies.stochastic_stress_test import get_stress_tester
     from wallet_manager.strategies.latency_shield import get_latency_shield
-    from wallet_manager.orchestrator import GasMonitor, send_heartbeat_telemetry
+    from wallet_manager.strategies.liquidity_alpha import get_liquidity_alpha
+    from wallet_manager.strategies.quant_analytics import get_quant_analytics
+    from wallet_manager.strategies.regime_filter import get_regime_filter
+    from wallet_manager.strategies.robust_alpha import get_robust_alpha_engine
+    from wallet_manager.strategies.stochastic_stress_test import get_stress_tester
+    from wallet_manager.strategies.wf_validator import get_wf_validator
 
     ctx = task_context or {}
     portfolio_manager = ctx.get("portfolio_manager")
@@ -645,9 +647,10 @@ async def _ml_quant_task_factory(
 
     YIELD and AIRDROP pillars still execute alongside.
     """
+    from wallet_manager.network.gas_monitor import GasMonitor
+    from wallet_manager.orchestrator import send_heartbeat_telemetry
     from wallet_manager.strategies.execution_logic import get_ml_execution_engine
     from wallet_manager.strategies.quant_analytics import get_quant_analytics
-    from wallet_manager.orchestrator import GasMonitor, send_heartbeat_telemetry
 
     ctx = task_context or {}
     portfolio_manager = ctx.get("portfolio_manager")
@@ -796,8 +799,8 @@ async def _ml_quant_task_factory(
 
             # ── FeatureDriftMonitor — per-feature KL divergence tracking ──────────
             try:
-                from wallet_manager.strategies.robust_alpha import get_feature_drift_monitor
                 from wallet_manager.strategies.alpha_engine import FeatureStore
+                from wallet_manager.strategies.robust_alpha import get_feature_drift_monitor
                 _fdm = get_feature_drift_monitor()
                 _fv2 = engine.alpha.get_last_feature_vector()
                 if _fv2 is not None:
@@ -863,8 +866,9 @@ async def _quantx_task_factory(
 
     YIELD, SHORT, and AIRDROP pillars are still executed alongside.
     """
+    from wallet_manager.network.gas_monitor import GasMonitor
+    from wallet_manager.orchestrator import send_heartbeat_telemetry
     from wallet_manager.strategies.quantx_engine import get_quantx_engine
-    from wallet_manager.orchestrator import GasMonitor, send_heartbeat_telemetry
 
     ctx = task_context or {}
     portfolio_manager = ctx.get("portfolio_manager")
@@ -1020,7 +1024,8 @@ async def _three_pillar_task_factory(
     Delegates to yield_strategy, algo_strategy, and airdrop (ping-pong) based on
     PortfolioManager state. All txs routed through manager.sign_and_broadcast_tx.
     """
-    from wallet_manager.orchestrator import GasMonitor, send_heartbeat_telemetry
+    from wallet_manager.network.gas_monitor import GasMonitor
+    from wallet_manager.orchestrator import send_heartbeat_telemetry
 
     ctx = task_context or {}
     command_state = ctx.get("command_state")
@@ -1168,9 +1173,9 @@ async def _three_pillar_task_factory(
 
     # --- Flash Crash Detection (before any trading) ---
     from wallet_manager.strategies.flash_crash_detector import (
+        activate_kill_switch,
         get_detector,
         send_kill_switch_alert,
-        activate_kill_switch,
     )
     crash_detector = get_detector()
     if crash_detector.is_kill_switch_active:
@@ -1301,7 +1306,7 @@ async def _airdrop_task_factory(
     If ETH value > $10: swap 10-20% ETH -> USDC.
     When airdrop_budget_usd is in context, caps swap to stay within 15% allocation.
     """
-    from wallet_manager.orchestrator import GasMonitor
+    from wallet_manager.network.gas_monitor import GasMonitor
 
     ctx = task_context or {}
     notifier = ctx.get("notifier")
@@ -1376,7 +1381,7 @@ async def _airdrop_task_factory(
 
     if do_usdc_to_eth:
         # USDC -> ETH: swap 20-50% of USDC (capped by airdrop budget if set)
-        pct = random.uniform(0.20, 0.50)  # noqa: S311
+        pct = random.uniform(0.20, 0.50)
         amount_usdc = int(balance_usdc * pct)
         if airdrop_budget_usd is not None and airdrop_budget_usd > 0:
             max_usdc = int(airdrop_budget_usd * 0.5 * 1e6)
@@ -1395,7 +1400,7 @@ async def _airdrop_task_factory(
 
     if do_eth_to_usdc:
         # ETH -> USDC: swap 10-20% of ETH (capped by airdrop budget if set)
-        pct = random.uniform(0.10, 0.20)  # noqa: S311
+        pct = random.uniform(0.10, 0.20)
         amount_wei = int(balance_wei * pct)
         if airdrop_budget_usd is not None and airdrop_budget_usd > 0:
             max_eth_val_usd = airdrop_budget_usd * 0.5

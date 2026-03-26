@@ -4,9 +4,9 @@ from __future__ import annotations
 import inspect
 
 import pytest
-from wallet_manager.config import Settings, get_settings, VALID_EXECUTION_MODES
-from wallet_manager.exceptions import ConfigurationError
 
+from wallet_manager.config import VALID_EXECUTION_MODES, Settings, get_settings
+from wallet_manager.exceptions import ConfigurationError
 
 # ---------------------------------------------------------------------------
 # Helpers

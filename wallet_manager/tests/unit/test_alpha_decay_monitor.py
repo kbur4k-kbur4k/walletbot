@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import math
+
 import numpy as np
 import pytest
 
 from wallet_manager.strategies.alpha_decay_monitor import (
-    SignalHalfLifeEstimator,
     CrowdingDetector,
+    SignalHalfLifeEstimator,
 )
 
 

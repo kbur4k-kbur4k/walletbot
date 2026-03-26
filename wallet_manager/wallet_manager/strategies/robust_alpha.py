@@ -977,6 +977,7 @@ class FeatureDriftMonitor:
     def update(self, feature_vector: np.ndarray, feature_names: list[str]) -> None:
         """Ingest a new feature vector observation."""
         from collections import deque
+
         from wallet_manager.config import get_settings
         cfg = get_settings()
         window_size = cfg.feature_drift_window

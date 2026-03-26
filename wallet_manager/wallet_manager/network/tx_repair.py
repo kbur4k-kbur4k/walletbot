@@ -438,7 +438,7 @@ class TxRepairService:
         from eth_account import Account
 
         # Randomised gas bump: 15–25% above original
-        bump_pct = random.uniform(_cfg().rbf_gas_bump_min, _cfg().rbf_gas_bump_max)  # noqa: S311
+        bump_pct = random.uniform(_cfg().rbf_gas_bump_min, _cfg().rbf_gas_bump_max)
         new_gas_price_wei = int(original_params.gas_price_wei * (1.0 + bump_pct))
 
         replacement = TxParams(

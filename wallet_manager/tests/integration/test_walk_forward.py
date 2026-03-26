@@ -1,7 +1,9 @@
 """tests/integration/test_walk_forward.py — WalkForwardValidator E2E testleri."""
 from __future__ import annotations
+
 import numpy as np
 import pytest
+
 from wallet_manager.strategies.wf_validator import WalkForwardValidator
 
 

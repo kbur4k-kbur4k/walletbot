@@ -1,8 +1,11 @@
 """tests/unit/test_trade_journal.py — TradeJournal testleri."""
 from __future__ import annotations
+
 import json
-import pytest
 from pathlib import Path
+
+import pytest
+
 from wallet_manager.trade_journal import TradeJournal
 
 

@@ -1,15 +1,17 @@
 """tests/unit/test_deep_kelly_risk.py — DeepKellyRiskEngine kapsamlı testler."""
 from __future__ import annotations
-import pytest
+
 import numpy as np
+import pytest
+
 from wallet_manager.strategies.deep_kelly_risk import (
+    VAR_MAX_LOSS_PCT,
     DeepKellyRiskEngine,
     DrawdownController,
-    VaRCalculator,
-    TradeOutcome,
-    RiskDecision,
     PPOAgent,
-    VAR_MAX_LOSS_PCT,
+    RiskDecision,
+    TradeOutcome,
+    VaRCalculator,
 )
 
 

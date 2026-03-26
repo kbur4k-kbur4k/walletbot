@@ -9,7 +9,6 @@ import pytest
 from wallet_manager.core.models import TxParams, TxReceipt, TxStatus
 from wallet_manager.network.tx_broadcaster import Web3TxBroadcaster
 
-
 # ---------------------------------------------------------------------------
 # Shared test data
 # ---------------------------------------------------------------------------

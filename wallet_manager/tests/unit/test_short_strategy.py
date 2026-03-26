@@ -14,9 +14,10 @@ from __future__ import annotations
 
 import json
 import math
-import pytest
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from wallet_manager.strategies.short_strategy import (
     MAX_SHORT_PORTFOLIO_PCT,
@@ -25,14 +26,13 @@ from wallet_manager.strategies.short_strategy import (
     Z_SCORE_SHORT_THRESHOLD,
     ShortPosition,
     ShortState,
+    _load_state,
+    _save_state,
     get_short_position_state,
     is_short_active,
     should_close_short,
     should_open_short,
-    _load_state,
-    _save_state,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

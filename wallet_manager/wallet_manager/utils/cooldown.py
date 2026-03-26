@@ -109,17 +109,17 @@ class CooldownManager(ICooldown):
         Returns:
             None — control resumes after *delay* seconds.
         """
-        base: float = random.expovariate(self._lam)  # noqa: S311
+        base: float = random.expovariate(self._lam)
 
         jitter: float = 0.0
         if self._sigma > 0:
-            raw_jitter = random.gauss(0.0, self._sigma)  # noqa: S311
+            raw_jitter = random.gauss(0.0, self._sigma)
             # Clip jitter to ±3σ for Ghost: higher variance, no identical offsets
             clip_bound = 3.0 * self._sigma
             jitter = max(-clip_bound, min(clip_bound, raw_jitter))
 
         # Unique micro-offset: ensure no two waits are identical (clock + random)
-        micro = random.uniform(0.001, 0.5)  # noqa: S311
+        micro = random.uniform(0.001, 0.5)
         delay: float = max(_cfg().cooldown_min_delay, base + jitter + micro)
         log.debug(
             f"CooldownManager: sleeping {delay:.3f}s (base={base:.3f}, jitter={jitter:+.3f}).",

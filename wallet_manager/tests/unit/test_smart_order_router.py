@@ -1,8 +1,11 @@
 """tests/unit/test_smart_order_router.py — SmartOrderRouter testleri."""
 from __future__ import annotations
+
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-from wallet_manager.strategies.smart_order_router import SmartOrderRouter, RoutePlan
+
+from wallet_manager.strategies.smart_order_router import RoutePlan, SmartOrderRouter
 
 
 class TestSmartOrderRouter:

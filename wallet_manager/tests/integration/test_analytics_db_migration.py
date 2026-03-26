@@ -6,9 +6,8 @@ import time
 import aiosqlite
 import pytest
 
-from wallet_manager.resilience.analytics import AnalyticsDB
 from wallet_manager.core.models import TxRecord, TxStatus
-
+from wallet_manager.resilience.analytics import AnalyticsDB
 
 # ---------------------------------------------------------------------------
 # Helpers

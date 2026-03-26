@@ -7,7 +7,6 @@ Domain-specific exception hierarchy for the wallet_manager package.
 from __future__ import annotations
 
 
-
 class WalletManagerError(Exception):
     """Root exception for all wallet_manager failures."""
 

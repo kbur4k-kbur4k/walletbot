@@ -34,7 +34,7 @@ import math
 import threading
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from typing import Final
 
 import numpy as np
@@ -291,8 +291,8 @@ class EconomicCalendar:
         try:
             # Use asyncio-friendly HTTP if aiohttp is available; fall back
             # to a thread-pool executor wrapping urllib.
-            import urllib.request
             import json
+            import urllib.request
 
             loop = asyncio.get_running_loop()
             response_text: str = await asyncio.wait_for(
@@ -334,7 +334,7 @@ class EconomicCalendar:
             self._last_fetch_ts = now
             log.info(f"Fetched {len(new_events)} high-impact events from calendar API.")
 
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             log.warning(
                 "Calendar API fetch failed (%s); continuing with hardcoded events.",
                 exc,
@@ -849,7 +849,7 @@ class RegimeFilter:
             try:
                 self._hmm.fit(obs_matrix)
                 self._last_fit_count = n_obs
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 log.error("HMM fit failed: %s — falling back to simple vol.", exc)
                 self._update_regime_simple()
                 return
@@ -860,7 +860,7 @@ class RegimeFilter:
             proba_2d = self._hmm.predict_proba(obs_matrix)
             # Use last time step's posterior probabilities
             self._state_probs = proba_2d[-1]
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             log.error("HMM predict failed: %s — falling back.", exc)
             self._update_regime_simple()
             return
@@ -1020,7 +1020,7 @@ class RegimeFilter:
         volume: float = 0.0,
         gas_gwei: float = 0.0,
         timestamp: float | None = None,
-    ) -> "RegimeSignal":
+    ) -> RegimeSignal:
         """Ingest a price tick and return the current RegimeSignal.
 
         Convenience method combining ``ingest_market_data`` + ``get_current_regime``.

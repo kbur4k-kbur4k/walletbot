@@ -157,7 +157,7 @@ class ExecutionStrategy(IStrategy):
             )
 
         # Step 1: uniform base fraction
-        base_pct = random.uniform(lo, hi)  # noqa: S311
+        base_pct = random.uniform(lo, hi)
 
         # Step 2: nominal amount
         base_amount = int(balance_wei * base_pct)
@@ -165,7 +165,7 @@ class ExecutionStrategy(IStrategy):
         # Step 3: Gaussian jitter on the amount
         sigma = base_amount * self._cfg.amount_sigma_pct
         if sigma > 0:
-            raw_jitter = random.gauss(0.0, sigma)  # noqa: S311
+            raw_jitter = random.gauss(0.0, sigma)
             clip_bound = _JITTER_CLIP_SIGMA * sigma
             jitter = int(max(-clip_bound, min(clip_bound, raw_jitter)))
         else:
@@ -203,7 +203,7 @@ class ExecutionStrategy(IStrategy):
 
         jitter = 0.0
         if sigma > 0:
-            raw = random.gauss(0.0, sigma)  # noqa: S311
+            raw = random.gauss(0.0, sigma)
             clip = _JITTER_CLIP_SIGMA * sigma
             jitter = max(-clip, min(clip, raw))
 
@@ -226,7 +226,7 @@ class ExecutionStrategy(IStrategy):
         """
         if not tasks:
             return []
-        shuffled = random.sample(tasks, len(tasks))  # noqa: S311
+        shuffled = random.sample(tasks, len(tasks))
         log.debug(f"Strategy.shuffle_tasks: {len(shuffled)} tasks shuffled.")
         return shuffled
 

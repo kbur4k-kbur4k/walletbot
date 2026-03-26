@@ -1,15 +1,18 @@
 """tests/unit/test_actions.py — actions.py pure fonksiyon testleri."""
 from __future__ import annotations
+
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+
 from wallet_manager.actions import (
+    _checksum,
     eth_balance_usd_value,
-    usdc_balance_usd_value,
+    get_chain_addresses,
+    get_rotated_fee_tier,
     is_swap_eligible,
     is_usdc_swap_eligible,
-    get_rotated_fee_tier,
-    get_chain_addresses,
-    _checksum,
+    usdc_balance_usd_value,
 )
 
 

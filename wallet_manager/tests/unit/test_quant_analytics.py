@@ -5,7 +5,6 @@ import pytest
 
 from wallet_manager.strategies.quant_analytics import QuantAnalytics
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

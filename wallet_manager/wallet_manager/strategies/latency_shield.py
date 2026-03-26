@@ -190,7 +190,7 @@ class NetworkLatencyEmulator:
             ) as resp:
                 await resp.json()
             latency_ms = (time.monotonic() - t0) * 1000.0
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             log.warning("RPC latency measurement failed: %s", exc)
             return -1.0
 
@@ -440,7 +440,7 @@ class ConnectionHealthMonitor:
             self.record_health_check(is_healthy=False)
             return False
 
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             log.warning("Health check failed: %s", exc)
             self.record_health_check(is_healthy=False)
             return False

@@ -9,7 +9,6 @@ import pytest
 
 from wallet_manager.network.session_factory import SessionFactory
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

@@ -66,155 +66,162 @@ for _module_name in _STRATEGY_MODULES:
     except ImportError as _exc:
         log.warning("Strategy import failed: %s — %s", _module_name, _exc)
 
-# Always-required strategy modules
-from . import yield_strategy, algo_strategy, airdrop_strategy  # noqa: E402, F401
-from . import short_strategy, idle_sweep  # noqa: E402, F401
-from . import kelly_criterion, quantx_engine  # noqa: E402, F401
-from . import quant_analytics  # noqa: E402, F401
-from . import oci_deployer  # noqa: E402, F401
+# Always-required strategy modules — noqa: F401 because these are re-exported for
+# callers that do ``from wallet_manager.strategies import yield_strategy`` etc.
+from . import (  # noqa: F401
+    airdrop_strategy,
+    algo_strategy,
+    idle_sweep,
+    kelly_criterion,
+    oci_deployer,
+    quant_analytics,
+    quantx_engine,
+    short_strategy,
+    yield_strategy,
+)
 
 # Conditional re-exports (graceful if ML libs absent)
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.yield_strategy import (  # noqa: F401
-        supply_usdc,  # noqa: F401
-        withdraw_usdc,  # noqa: F401
-        get_apy,  # noqa: F401
-        get_yield_pillar_value_usd,  # noqa: F401
-        get_user_position,  # noqa: F401
-        UserPosition,  # noqa: F401
+    from wallet_manager.strategies.yield_strategy import (
+        UserPosition,
+        get_apy,
+        get_user_position,
+        get_yield_pillar_value_usd,
+        supply_usdc,
+        withdraw_usdc,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.algo_strategy import (  # noqa: F401
-        run_algo_strategy,  # noqa: F401
-        compute_bollinger_bands,  # noqa: F401
-        bollinger_band_proximity,  # noqa: F401
+    from wallet_manager.strategies.algo_strategy import (
+        bollinger_band_proximity,
+        compute_bollinger_bands,
+        run_algo_strategy,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.short_strategy import run_short_strategy  # noqa: F401
+    from wallet_manager.strategies.short_strategy import run_short_strategy
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.airdrop_strategy import run_airdrop_strategy  # noqa: F401
+    from wallet_manager.strategies.airdrop_strategy import run_airdrop_strategy
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.idle_sweep import run_idle_sweep  # noqa: F401
+    from wallet_manager.strategies.idle_sweep import run_idle_sweep
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.flash_crash_detector import (  # noqa: F401
-        FlashCrashDetector,  # noqa: F401
-        get_detector,  # noqa: F401
-        CrashAlert,  # noqa: F401
+    from wallet_manager.strategies.flash_crash_detector import (
+        CrashAlert,
+        FlashCrashDetector,
+        get_detector,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.signal_intelligence import (  # noqa: F401
-        AlphaGenerator,  # noqa: F401
-        SignalOutput,  # noqa: F401
-        get_alpha_generator,  # noqa: F401
+    from wallet_manager.strategies.signal_intelligence import (
+        AlphaGenerator,
+        SignalOutput,
+        get_alpha_generator,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.smart_order_router import (  # noqa: F401
-        SmartOrderRouter,  # noqa: F401
-        get_smart_order_router,  # noqa: F401
+    from wallet_manager.strategies.smart_order_router import (
+        SmartOrderRouter,
+        get_smart_order_router,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.mev_shield import (  # noqa: F401
-        MEVShield,  # noqa: F401
-        get_mev_shield,  # noqa: F401
+    from wallet_manager.strategies.mev_shield import (
+        MEVShield,
+        get_mev_shield,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.kelly_criterion import (  # noqa: F401
-        KellyCriterion,  # noqa: F401
-        get_kelly_criterion,  # noqa: F401
+    from wallet_manager.strategies.kelly_criterion import (
+        KellyCriterion,
+        get_kelly_criterion,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.quantx_engine import (  # noqa: F401
-        QuantXEngine,  # noqa: F401
-        get_quantx_engine,  # noqa: F401
+    from wallet_manager.strategies.quantx_engine import (
+        QuantXEngine,
+        get_quantx_engine,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.alpha_engine import (  # noqa: F401
-        StochasticMLAlphaEngine,  # noqa: F401
-        get_alpha_engine,  # noqa: F401
+    from wallet_manager.strategies.alpha_engine import (
+        StochasticMLAlphaEngine,
+        get_alpha_engine,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.deep_kelly_risk import (  # noqa: F401
-        DeepKellyRiskEngine,  # noqa: F401
-        get_deep_kelly_engine,  # noqa: F401
+    from wallet_manager.strategies.deep_kelly_risk import (
+        DeepKellyRiskEngine,
+        get_deep_kelly_engine,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.execution_logic import (  # noqa: F401
-        MLQuantExecutionEngine,  # noqa: F401
-        get_ml_execution_engine,  # noqa: F401
+    from wallet_manager.strategies.execution_logic import (
+        MLQuantExecutionEngine,
+        get_ml_execution_engine,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.quant_analytics import (  # noqa: F401
-        QuantAnalytics,  # noqa: F401
-        get_quant_analytics,  # noqa: F401
+    from wallet_manager.strategies.quant_analytics import (
+        QuantAnalytics,
+        get_quant_analytics,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.liquidity_alpha import (  # noqa: F401
-        LiquidityAlpha,  # noqa: F401
-        get_liquidity_alpha,  # noqa: F401
-        reset_liquidity_alpha,  # noqa: F401
+    from wallet_manager.strategies.liquidity_alpha import (
+        LiquidityAlpha,
+        get_liquidity_alpha,
+        reset_liquidity_alpha,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.robust_alpha import (  # noqa: F401
-        RobustAlphaEngine,  # noqa: F401
-        get_robust_alpha_engine,  # noqa: F401
-        reset_robust_alpha_engine,  # noqa: F401
+    from wallet_manager.strategies.robust_alpha import (
+        RobustAlphaEngine,
+        get_robust_alpha_engine,
+        reset_robust_alpha_engine,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.wf_validator import (  # noqa: F401
-        WalkForwardValidator,  # noqa: F401
-        get_wf_validator,  # noqa: F401
-        reset_wf_validator,  # noqa: F401
+    from wallet_manager.strategies.wf_validator import (
+        WalkForwardValidator,
+        get_wf_validator,
+        reset_wf_validator,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.regime_filter import (  # noqa: F401
-        RegimeFilter,  # noqa: F401
-        get_regime_filter,  # noqa: F401
-        reset_regime_filter,  # noqa: F401
+    from wallet_manager.strategies.regime_filter import (
+        RegimeFilter,
+        get_regime_filter,
+        reset_regime_filter,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.paper_engine import (  # noqa: F401
-        PaperTradingEngine,  # noqa: F401
-        PaperExecutionBridge,  # noqa: F401
-        get_paper_engine,  # noqa: F401
-        reset_paper_engine,  # noqa: F401
+    from wallet_manager.strategies.paper_engine import (
+        PaperExecutionBridge,
+        PaperTradingEngine,
+        get_paper_engine,
+        reset_paper_engine,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.stochastic_stress_test import (  # noqa: F401
-        StochasticStressTester,  # noqa: F401
-        get_stress_tester,  # noqa: F401
-        reset_stress_tester,  # noqa: F401
+    from wallet_manager.strategies.stochastic_stress_test import (
+        StochasticStressTester,
+        get_stress_tester,
+        reset_stress_tester,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.latency_shield import (  # noqa: F401
-        LatencyShield,  # noqa: F401
-        get_latency_shield,  # noqa: F401
-        reset_latency_shield,  # noqa: F401
+    from wallet_manager.strategies.latency_shield import (
+        LatencyShield,
+        get_latency_shield,
+        reset_latency_shield,
     )
 
 with contextlib.suppress(ImportError):
-    from wallet_manager.strategies.oci_deployer import (  # noqa: F401
-        OCIDeployer,  # noqa: F401
-        get_oci_deployer,  # noqa: F401
-        reset_oci_deployer,  # noqa: F401
+    from wallet_manager.strategies.oci_deployer import (
+        OCIDeployer,
+        get_oci_deployer,
+        reset_oci_deployer,
     )

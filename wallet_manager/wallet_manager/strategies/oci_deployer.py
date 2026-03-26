@@ -134,7 +134,7 @@ def _get_memory_rss_mb() -> float:
         try:
             proc = psutil.Process(os.getpid())
             return proc.memory_info().rss / (1024 * 1024)
-        except Exception:  # noqa: BLE001
+        except Exception:
             log.warning("psutil.Process().memory_info() failed; falling back")
 
     # Linux fallback — parse /proc/self/status
@@ -146,7 +146,7 @@ def _get_memory_rss_mb() -> float:
                         # Value is in kB
                         kb = int(line.split()[1])
                         return kb / 1024.0
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass
 
     return 0.0
@@ -158,7 +158,7 @@ def _get_cpu_pct() -> float:
         try:
             proc = psutil.Process(os.getpid())
             return proc.cpu_percent(interval=0)
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass
     return 0.0
 
@@ -538,11 +538,11 @@ class HealthCheckAPI:
             return
         try:
             if self._runner is not None:
-                from aiohttp import web  # noqa: F811
+                from aiohttp import web
 
                 runner: web.AppRunner = self._runner  # type: ignore[assignment]
                 await runner.cleanup()
-        except Exception:  # noqa: BLE001
+        except Exception:
             log.warning("HealthCheckAPI cleanup error", exc_info=True)
         finally:
             self._runner = None
@@ -554,7 +554,7 @@ class HealthCheckAPI:
 
     async def _handle_health(self, _request: object) -> object:
         """``GET /health`` — compact JSON for OCI health probes."""
-        from aiohttp import web  # noqa: F811
+        from aiohttp import web
 
         vitals = self._watchdog.build_vitals()
         if vitals.is_healthy:
@@ -577,14 +577,14 @@ class HealthCheckAPI:
 
     async def _handle_vitals(self, _request: object) -> object:
         """``GET /vitals`` — full ``SystemVitals`` as JSON dict."""
-        from aiohttp import web  # noqa: F811
+        from aiohttp import web
 
         vitals = self._watchdog.build_vitals()
         return web.json_response(asdict(vitals))
 
     async def _handle_events(self, _request: object) -> object:
         """``GET /events`` — recent watchdog events."""
-        from aiohttp import web  # noqa: F811
+        from aiohttp import web
 
         events = self._watchdog.get_events()
         payload = [asdict(e) for e in events]
@@ -592,7 +592,7 @@ class HealthCheckAPI:
 
     async def _handle_portfolio(self, _request: object) -> object:
         """``GET /portfolio`` — execution mode and engine status."""
-        from aiohttp import web  # noqa: F811
+        from aiohttp import web
 
         execution_mode = os.environ.get("EXECUTION_MODE", "robust_paper")
         mode = execution_mode if execution_mode else "robust_paper"
@@ -722,7 +722,7 @@ class OCIDeployer:
                 host=HEALTH_API_HOST,
                 port=HEALTH_API_PORT,
             )
-        except Exception:  # noqa: BLE001
+        except Exception:
             log.warning(
                 "Health API failed to start — watchdog continues without it",
                 exc_info=True,

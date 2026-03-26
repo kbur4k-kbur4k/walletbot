@@ -38,7 +38,24 @@ from wallet_manager import actions
 from wallet_manager.core.models import TxReceipt, TxRecord, TxStatus
 from wallet_manager.portfolio_manager import StrategyType
 from wallet_manager.security.logging_filter import build_logger
-
+from wallet_manager.strategies.flash_crash_detector import (
+    FlashCrashDetector,
+    activate_kill_switch,
+    send_kill_switch_alert,
+)
+from wallet_manager.strategies.flash_crash_detector import (
+    get_detector as get_crash_detector,
+)
+from wallet_manager.strategies.idle_sweep import run_idle_sweep
+from wallet_manager.strategies.kelly_criterion import (
+    KellyCriterion,
+    TradeResult,
+    get_kelly_criterion,
+)
+from wallet_manager.strategies.mev_shield import (
+    MEVShield,
+    get_mev_shield,
+)
 from wallet_manager.strategies.signal_intelligence import (
     AlphaGenerator,
     SignalOutput,
@@ -48,22 +65,6 @@ from wallet_manager.strategies.smart_order_router import (
     SmartOrderRouter,
     get_smart_order_router,
 )
-from wallet_manager.strategies.mev_shield import (
-    MEVShield,
-    get_mev_shield,
-)
-from wallet_manager.strategies.kelly_criterion import (
-    KellyCriterion,
-    TradeResult,
-    get_kelly_criterion,
-)
-from wallet_manager.strategies.flash_crash_detector import (
-    FlashCrashDetector,
-    get_detector as get_crash_detector,
-    send_kill_switch_alert,
-    activate_kill_switch,
-)
-from wallet_manager.strategies.idle_sweep import run_idle_sweep
 
 if TYPE_CHECKING:
     from wallet_manager.core.manager import WalletManager
@@ -189,7 +190,7 @@ class QuantXEngine:
         Returns:
             QuantXCycleResult with all execution details.
         """
-        from wallet_manager.orchestrator import GasMonitor
+        from wallet_manager.network.gas_monitor import GasMonitor
 
         cycle_start = time.time()
         result = QuantXCycleResult()
@@ -396,11 +397,11 @@ class QuantXEngine:
         elif should_short:
             # Delegate to existing short_strategy for delta-neutral hedging
             try:
-                from wallet_manager.strategies.short_strategy import run_short_strategy
                 from wallet_manager.strategies.algo_strategy import (
-                    compute_rsi,
                     compute_bollinger_bands,
+                    compute_rsi,
                 )
+                from wallet_manager.strategies.short_strategy import run_short_strategy
 
                 prices = self.alpha.zscore_engine.get_prices()
                 rsi = compute_rsi(prices) if len(prices) > 15 else 50.0

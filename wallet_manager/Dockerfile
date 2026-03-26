@@ -15,4 +15,7 @@ RUN pip install --no-cache-dir -e . \
 
 USER appuser
 
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:9090/health')" || exit 1
+
 ENTRYPOINT ["python", "-m", "wallet_manager.orchestrator"]

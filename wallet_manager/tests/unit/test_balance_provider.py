@@ -8,7 +8,6 @@ import pytest
 
 from wallet_manager.network.balance_provider import Web3BalanceProvider
 
-
 # ---------------------------------------------------------------------------
 # Shared test data
 # ---------------------------------------------------------------------------

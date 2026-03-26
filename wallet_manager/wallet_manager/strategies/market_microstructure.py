@@ -196,9 +196,9 @@ class InformationRatioTracker:
     def __init__(self, signal_names: list[str]) -> None:
         self._names = signal_names
         self._returns: dict[str, deque] = {n: deque(maxlen=self.IR_WINDOW) for n in signal_names}
-        self._ir: dict[str, float] = {n: 0.0 for n in signal_names}
-        self._disabled: dict[str, bool] = {n: False for n in signal_names}
-        self._below_threshold_count: dict[str, int] = {n: 0 for n in signal_names}
+        self._ir: dict[str, float] = dict.fromkeys(signal_names, 0.0)
+        self._disabled: dict[str, bool] = dict.fromkeys(signal_names, False)
+        self._below_threshold_count: dict[str, int] = dict.fromkeys(signal_names, 0)
 
     def record(self, signal_name: str, signal_return: float) -> None:
         """Record the realised return for one signal component."""

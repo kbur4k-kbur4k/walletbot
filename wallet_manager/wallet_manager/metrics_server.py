@@ -32,9 +32,9 @@ import time
 import aiohttp.web
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
+    CollectorRegistry,
     Counter,
     Gauge,
-    CollectorRegistry,
     generate_latest,
 )
 

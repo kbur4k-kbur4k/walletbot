@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 import asyncio
-import pytest
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
 from wallet_manager.strategies.paper_engine import (
-    PaperTradingEngine,
     PaperTradeConfig,
+    PaperTradingEngine,
     SlippageSimulator,
     VirtualLedger,
     reset_paper_engine,

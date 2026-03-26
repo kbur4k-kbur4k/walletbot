@@ -3,20 +3,20 @@ from __future__ import annotations
 
 import json
 import math
-import numpy as np
-import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import numpy as np
+import pytest
+
+from wallet_manager.strategies.robust_alpha import FeatureImportanceStabilityMonitor
 from wallet_manager.strategies.wf_validator import (
     CombinatorialPurgedCV,
+    ConceptDriftDetector,
     CPCVResult,
     DeflatedSharpeRatioTest,
     DeflatedSRResult,
-    ConceptDriftDetector,
 )
-from wallet_manager.strategies.robust_alpha import FeatureImportanceStabilityMonitor
-
 
 # ---------------------------------------------------------------------------
 # CombinatorialPurgedCV
@@ -169,9 +169,8 @@ def test_regime_balanced_sampler_all_five_regimes():
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "scripts"))
 
-    from data.historical_data_pipeline import RegimeBalancedSampler
-
     import pandas as pd
+    from data.historical_data_pipeline import RegimeBalancedSampler
     rng = np.random.default_rng(42)
     n = 200
     regimes = ["bull", "bear", "sideways", "high_vol", "crisis"]

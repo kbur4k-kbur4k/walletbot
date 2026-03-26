@@ -21,6 +21,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from wallet_manager.strategies.latency_shield import (
+    _LATENCY_HISTORY_SIZE,
     CONNECTION_DEGRADED,
     CONNECTION_HEALTHY,
     LATENCY_MAX_MS,
@@ -37,10 +38,8 @@ from wallet_manager.strategies.latency_shield import (
     LatencyShield,
     NetworkLatencyEmulator,
     StaleQuoteProtector,
-    _LATENCY_HISTORY_SIZE,
     reset_latency_shield,
 )
-
 
 # ---------------------------------------------------------------------------
 # NetworkLatencyEmulator

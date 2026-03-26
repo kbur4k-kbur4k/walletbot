@@ -1,8 +1,10 @@
 """tests/unit/test_metrics_server.py — MetricsServer endpoint testleri."""
 from __future__ import annotations
+
+import aiohttp
 import pytest
 from aiohttp.test_utils import TestClient, TestServer
-import aiohttp
+
 from wallet_manager.metrics_server import MetricsServer
 
 

@@ -104,7 +104,7 @@ async def run_idle_sweep(
     Returns:
         List of transaction receipts from the supply operation.
     """
-    from wallet_manager.orchestrator import GasMonitor
+    from wallet_manager.network.gas_monitor import GasMonitor
     from wallet_manager.strategies import yield_strategy
 
     config = manager.get_config(wallet_id)

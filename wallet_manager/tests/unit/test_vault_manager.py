@@ -23,7 +23,6 @@ import pytest
 
 from wallet_manager.security.vault_manager import VaultKeyManager
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

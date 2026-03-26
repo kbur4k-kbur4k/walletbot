@@ -10,7 +10,7 @@ test:
 	pytest tests/ -v \
 	  --cov=wallet_manager \
 	  --cov-report=term-missing \
-	  --cov-fail-under=80
+	  --cov-fail-under=85
 
 test-fast:
 	pytest tests/ -x -q --tb=short

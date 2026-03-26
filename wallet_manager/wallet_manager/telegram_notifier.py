@@ -71,13 +71,13 @@ from wallet_manager.exceptions import (
 )
 from wallet_manager.security.logging_filter import build_logger
 from wallet_manager.security.telegram_commands import (
+    CommandCenter,
     CommandState,
     ConfirmationGate,
-    StatusProvider,
     LiveStatusProvider,
-    CommandCenter,
-    _MessageFormatter,
+    StatusProvider,
     _mask_address,
+    _MessageFormatter,
 )
 
 load_dotenv()
@@ -125,7 +125,7 @@ class _TelegramCredentials:
     _bot_token: str = field(repr=False)
     _chat_id: str = field(repr=False)
 
-    def __repr__(self) -> str:  # noqa: D105
+    def __repr__(self) -> str:
         return "_TelegramCredentials(***)"
 
     @property
@@ -602,7 +602,7 @@ class TelegramNotifier(INotifier):
                     log.error(
                         f"Delivery failed for {event.kind.name} (HTTP {exc.http_status if exc.http_status is not None else '?'}): {exc.message}",
                     )
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     log.error(
                         f"Unexpected delivery error for {event.kind.name}: {exc}",
                     )

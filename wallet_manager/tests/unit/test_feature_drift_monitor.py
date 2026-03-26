@@ -9,7 +9,6 @@ import pytest
 
 from wallet_manager.strategies.robust_alpha import FeatureDriftMonitor
 
-
 # ── fixtures ──────────────────────────────────────────────────────────────────
 
 @pytest.fixture

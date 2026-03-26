@@ -1,8 +1,9 @@
 """tests/unit/test_robust_alpha.py — RobustAlpha ve FracDiff testleri."""
 from __future__ import annotations
+
 import numpy as np
-import pytest
 import pandas as pd
+import pytest
 
 
 class TestFractionalDifferentiation:
@@ -123,8 +124,8 @@ class TestComputePermutationImportance:
     def test_returns_feature_registry(self):
         """compute_permutation_importance returns a FeatureRegistry instance."""
         from wallet_manager.strategies.robust_alpha import (
-            compute_permutation_importance,
             FeatureRegistry,
+            compute_permutation_importance,
         )
 
         rng = np.random.default_rng(0)
@@ -160,8 +161,9 @@ class TestFeatureImportanceStabilityMonitor:
 
     def _make_monitor(self, min_spearman: float = 0.6):
         """Construct a FeatureImportanceStabilityMonitor without file I/O."""
-        from wallet_manager.strategies.robust_alpha import FeatureImportanceStabilityMonitor
         from unittest.mock import patch
+
+        from wallet_manager.strategies.robust_alpha import FeatureImportanceStabilityMonitor
 
         with patch.object(
             FeatureImportanceStabilityMonitor, "_load_persisted", return_value=None

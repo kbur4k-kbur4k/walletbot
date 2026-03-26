@@ -1,7 +1,9 @@
 """tests/unit/test_airdrop_strategy.py — AIRDROP pillar tests."""
 from __future__ import annotations
+
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 
 
 class TestAirdropStrategyPlaceholder:
@@ -68,7 +70,7 @@ class TestRunAirdropStrategy:
             "wallet_manager.scheduler.should_run_swap_this_cycle",
             return_value=(True, 0),
         ), patch(
-            "wallet_manager.orchestrator.GasMonitor"
+            "wallet_manager.network.gas_monitor.GasMonitor"
         ) as MockGasMonitor:
             gas_monitor_instance = MagicMock()
             gas_monitor_instance.is_safe = AsyncMock(return_value=(True, 5.0))
@@ -97,7 +99,7 @@ class TestRunAirdropStrategy:
             "wallet_manager.scheduler.should_run_swap_this_cycle",
             return_value=(True, 0),
         ), patch(
-            "wallet_manager.orchestrator.GasMonitor"
+            "wallet_manager.network.gas_monitor.GasMonitor"
         ) as MockGasMonitor:
             gas_monitor_instance = MagicMock()
             # Gas is too high — is_safe returns False
@@ -145,7 +147,7 @@ class TestRunAirdropStrategy:
             "wallet_manager.scheduler.should_run_swap_this_cycle",
             return_value=(True, 0),
         ), patch(
-            "wallet_manager.orchestrator.GasMonitor"
+            "wallet_manager.network.gas_monitor.GasMonitor"
         ) as MockGasMonitor:
             gas_monitor_instance = MagicMock()
             gas_monitor_instance.is_safe = AsyncMock(return_value=(True, 3.0))
@@ -172,8 +174,9 @@ class TestGasAwareThrottle:
         This test verifies the balance-driven direction logic through
         GasAwareThrottle to ensure both directions are reachable.
         """
-        from wallet_manager.strategies.airdrop_strategy import GasAwareThrottle
         from unittest.mock import patch
+
+        from wallet_manager.strategies.airdrop_strategy import GasAwareThrottle
 
         throttle = GasAwareThrottle()
 
@@ -198,8 +201,9 @@ class TestGasAwareThrottle:
 
     def test_gas_throttle_blocks_when_ratio_exceeded(self):
         """GasAwareThrottle returns False when gas cost > max_ratio * fee."""
-        from wallet_manager.strategies.airdrop_strategy import GasAwareThrottle
         from unittest.mock import patch
+
+        from wallet_manager.strategies.airdrop_strategy import GasAwareThrottle
 
         throttle = GasAwareThrottle()
 
@@ -222,8 +226,9 @@ class TestGasAwareThrottle:
 
     def test_gas_throttle_zero_fee_skips(self):
         """swap_amount_usd=0 produces expected_fee=0 → always skips."""
-        from wallet_manager.strategies.airdrop_strategy import GasAwareThrottle
         from unittest.mock import patch
+
+        from wallet_manager.strategies.airdrop_strategy import GasAwareThrottle
 
         throttle = GasAwareThrottle()
 

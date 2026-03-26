@@ -11,7 +11,6 @@ import pytest
 
 from wallet_manager.telegram_notifier import ProactiveAlerter
 
-
 # ── fixtures ──────────────────────────────────────────────────────────────────
 
 @pytest.fixture

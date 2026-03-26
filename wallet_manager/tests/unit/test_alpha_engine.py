@@ -2,18 +2,19 @@
 from __future__ import annotations
 
 import math
+
 import numpy as np
 import pytest
 
 from wallet_manager.strategies.alpha_engine import (
-    AdaptiveGARCH,
-    KalmanPriceSmoother,
-    EnsembleAlphaEngine,
-    AlphaConfidenceEstimator,
-    ENSEMBLE_WEIGHT_XGB,
     ENSEMBLE_WEIGHT_LGBM,
     ENSEMBLE_WEIGHT_LSTM,
     ENSEMBLE_WEIGHT_TRANSFORMER,
+    ENSEMBLE_WEIGHT_XGB,
+    AdaptiveGARCH,
+    AlphaConfidenceEstimator,
+    EnsembleAlphaEngine,
+    KalmanPriceSmoother,
 )
 
 
@@ -61,7 +62,10 @@ def test_kalman_velocity_converges():
 def test_ensemble_output_probability_in_range():
     """EnsembleAlphaEngine output probability must be in [0, 1]."""
     from wallet_manager.strategies.alpha_engine import (
-        XGBoostPredictor, LightGBMPredictor, LSTMPredictor, TransformerPredictor,
+        LightGBMPredictor,
+        LSTMPredictor,
+        TransformerPredictor,
+        XGBoostPredictor,
     )
     xgb = XGBoostPredictor()
     lgbm = LightGBMPredictor()

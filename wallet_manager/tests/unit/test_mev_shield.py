@@ -26,16 +26,15 @@ import pytest
 from wallet_manager.strategies.mev_shield import (
     JITTER_MAX_MS,
     JITTER_MIN_MS,
+    RBF_GAS_BUMP_PCT,
+    RPC_FAILURE_THRESHOLD,
     DynamicRBF,
     FailoverRPCCluster,
     GaussianJitter,
     MEVShield,
-    RBF_GAS_BUMP_PCT,
     RPCProviderState,
-    RPC_FAILURE_THRESHOLD,
     reset_mev_shield,
 )
-
 
 # ---------------------------------------------------------------------------
 # GaussianJitter

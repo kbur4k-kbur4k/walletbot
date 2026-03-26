@@ -1,9 +1,12 @@
 """tests/unit/test_scheduler.py — SchedulerManager testleri."""
 from __future__ import annotations
+
 import json
 import time
-import pytest
 from pathlib import Path
+
+import pytest
+
 from wallet_manager.scheduler import SchedulerManager
 
 

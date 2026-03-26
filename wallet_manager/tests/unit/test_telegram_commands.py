@@ -1,7 +1,9 @@
 """tests/unit/test_telegram_commands.py — Telegram komut testleri."""
 from __future__ import annotations
-import pytest
+
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 
 class TestTelegramCommands:
@@ -170,7 +172,7 @@ async def test_reset_circuit_with_confirm_calls_force_close(command_center, mock
 
 def test_rate_limiter_blocks_flood(command_center):
     """After 10 commands in 60s, the rate limiter must return False."""
-    from wallet_manager.telegram_notifier import _RATE_LIMIT_MAX
+    from wallet_manager.security.telegram_commands import _RATE_LIMIT_MAX
     chat_id = "flood_test_unique_42"
 
     for _ in range(_RATE_LIMIT_MAX):
@@ -184,7 +186,8 @@ def test_rate_limiter_blocks_flood(command_center):
 def test_rate_limiter_allows_after_window_expires(command_center):
     """Commands after the rate limit window expires should be allowed again."""
     import time as _time
-    from wallet_manager.telegram_notifier import _RATE_LIMIT_MAX, _RATE_LIMIT_WINDOW
+
+    from wallet_manager.security.telegram_commands import _RATE_LIMIT_MAX, _RATE_LIMIT_WINDOW
     chat_id = "window_test_unique_42"
 
     for _ in range(_RATE_LIMIT_MAX):

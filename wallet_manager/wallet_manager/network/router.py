@@ -58,7 +58,11 @@ from web3 import AsyncWeb3
 
 from wallet_manager.core.interfaces import IRouter
 from wallet_manager.core.models import ChainConfig
-from wallet_manager.exceptions import ChainNotConfiguredError, ConfigurationError, NoAvailableRpcError
+from wallet_manager.exceptions import (
+    ChainNotConfiguredError,
+    ConfigurationError,
+    NoAvailableRpcError,
+)
 from wallet_manager.security.logging_filter import build_logger
 
 log = build_logger(__name__)

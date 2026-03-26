@@ -8,7 +8,6 @@ import pytest
 
 from wallet_manager.utils.cooldown import CooldownManager
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -150,8 +149,8 @@ class TestWaitMethod:
         lam=0.0 causes a fallback to cfg.poisson_lambda.  To force a ValueError
         we patch get_settings so the config default is also 0.
         """
-        from unittest.mock import patch
         from types import SimpleNamespace
+        from unittest.mock import patch
         fake_cfg = SimpleNamespace(poisson_lambda=0.0, gaussian_jitter_sigma=0.1, cooldown_min_delay=0.0)
         with patch("wallet_manager.utils.cooldown._cfg", return_value=fake_cfg):
             with pytest.raises(ValueError, match="Poisson rate"):
@@ -163,8 +162,8 @@ class TestWaitMethod:
         sigma=-1.0 triggers a fallback to cfg.gaussian_jitter_sigma.  We patch
         _cfg so the fallback value is also negative, forcing the ValueError.
         """
-        from unittest.mock import patch
         from types import SimpleNamespace
+        from unittest.mock import patch
         fake_cfg = SimpleNamespace(poisson_lambda=1.0, gaussian_jitter_sigma=-0.5, cooldown_min_delay=0.0)
         with patch("wallet_manager.utils.cooldown._cfg", return_value=fake_cfg):
             with pytest.raises(ValueError, match="Gaussian sigma"):

@@ -1,8 +1,9 @@
 """Tests verifying anti-overfit safeguards are active."""
 import re
+from unittest.mock import patch
+
 import numpy as np
 import pytest
-from unittest.mock import patch
 
 
 def test_regime_aware_kelly_scale_by_trade_count():

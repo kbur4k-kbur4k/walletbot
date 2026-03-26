@@ -1,7 +1,9 @@
 """tests/unit/test_yield_strategy.py — YIELD pillar testleri."""
 from __future__ import annotations
+
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 
 
 class TestYieldStrategy:
@@ -56,8 +58,8 @@ class TestSupplyUsdc:
     @pytest.mark.asyncio
     async def test_supply_usdc_to_aave_calls_broadcast(self):
         """supply_usdc() must call sign_and_broadcast_tx with Aave calldata."""
-        from wallet_manager.strategies.yield_strategy import supply_usdc
         from wallet_manager.core.models import TxParams
+        from wallet_manager.strategies.yield_strategy import supply_usdc
 
         fake_tx = TxParams(
             from_address="0xDeadBeef",
@@ -97,8 +99,8 @@ class TestSupplyUsdc:
     @pytest.mark.asyncio
     async def test_withdraw_usdc_from_aave(self):
         """withdraw_usdc() must call sign_and_broadcast_tx with withdraw calldata."""
-        from wallet_manager.strategies.yield_strategy import withdraw_usdc
         from wallet_manager.core.models import TxParams
+        from wallet_manager.strategies.yield_strategy import withdraw_usdc
 
         fake_tx = TxParams(
             from_address="0xDeadBeef",

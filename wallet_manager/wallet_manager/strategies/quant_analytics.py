@@ -321,7 +321,7 @@ class QuantAnalytics:
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 time.time(),
-                getattr(signal, "features", None) and signal.features.price or 0,
+                (getattr(signal, "features", None) and signal.features.price) or 0,
                 signal.alpha_score,
                 signal.prob_up,
                 signal.prob_down,

@@ -300,7 +300,7 @@ async def run_short_strategy(
     Returns:
         List of transaction receipts.
     """
-    from wallet_manager.orchestrator import GasMonitor
+    from wallet_manager.network.gas_monitor import GasMonitor
 
     config = manager.get_config(wallet_id)
     chain_id = int(config.chain_id)

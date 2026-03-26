@@ -51,10 +51,10 @@ import math
 import shutil
 import sys
 import time
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from collections.abc import Awaitable, Callable
 
 import numpy as np
 
@@ -148,7 +148,7 @@ class ValidationResult:
 
     oos_sharpe: float = 0.0
     # Optional simplified fields
-    oos_returns: "list[float] | None" = None
+    oos_returns: list[float] | None = None
     n_splits: int = 0
     # Full detail fields (optional for backward compat)
     fold_id: int = 0
@@ -171,7 +171,7 @@ class RetrainDecision:
     mean_oos_hit_rate: float = 0.0
     mean_oos_profit_factor: float = 0.0
     reason_code: str = ""
-    fold_results: "tuple[ValidationResult, ...]" = ()
+    fold_results: tuple[ValidationResult, ...] = ()
     # Dual walk-forward validation fields (D.3)
     expanding_oos_sharpe: float = 0.0
     sliding_oos_sharpe: float = 0.0
@@ -286,7 +286,7 @@ class PurgedKFoldSplit:
         return max(1, int(n_samples * self.purge_pct))
 
     def split(
-        self, X: "int | np.ndarray"
+        self, X: int | np.ndarray
     ) -> list[tuple[np.ndarray, np.ndarray]]:
         """Generate purged train/test index pairs.
 
@@ -397,7 +397,7 @@ class WalkForwardSplitter:
         self._expanding: bool = expanding
 
     def split(
-        self, X: "int | np.ndarray"
+        self, X: int | np.ndarray
     ) -> list[tuple[np.ndarray, np.ndarray]]:
         """Generate expanding-window walk-forward splits.
 
@@ -502,7 +502,7 @@ class WalkForwardSplitter:
         return splits
 
     def split_sliding(
-        self, X: "int | np.ndarray", window_days: int | None = None, samples_per_day: int = 288
+        self, X: int | np.ndarray, window_days: int | None = None, samples_per_day: int = 288
     ) -> list[tuple[np.ndarray, np.ndarray]]:
         """Generate sliding-window walk-forward splits.
 
@@ -614,7 +614,7 @@ class RetrainController:
         self._total_rejections: int = 0
         self._last_retrain_ts: float = 0.0
         self._current_model_version: str = "v0"
-        self._retrain_callback: "Callable[[], Awaitable[None]] | None" = None
+        self._retrain_callback: Callable[[], Awaitable[None]] | None = None
 
     def record_trade(self) -> None:
         """Increment the trade counter by one."""
@@ -639,9 +639,9 @@ class RetrainController:
 
     def evaluate_retrain(
         self,
-        fold_results: "ValidationResult | list[ValidationResult]",
+        fold_results: ValidationResult | list[ValidationResult],
         model_version: str = "v0",
-        sliding_fold_results: "list[ValidationResult] | None" = None,
+        sliding_fold_results: list[ValidationResult] | None = None,
     ) -> RetrainDecision:
         """Evaluate walk-forward results and decide accept/reject.
 
@@ -984,7 +984,7 @@ class WalkForwardValidator:
     # ------------------------------------------------------------------
 
     def get_walk_forward_splits(
-        self, n_samples: "int | list | np.ndarray"
+        self, n_samples: int | list | np.ndarray
     ) -> list[tuple[np.ndarray, np.ndarray, int]]:
         """Return expanding-window walk-forward split indices.
 
@@ -1030,13 +1030,13 @@ class WalkForwardValidator:
 
     def validate(
         self,
-        features: "np.ndarray | None" = None,
-        targets: "np.ndarray | None" = None,
+        features: np.ndarray | None = None,
+        targets: np.ndarray | None = None,
         model_version: str | None = None,
         # Simplified API: prices + signals
-        prices: "list | np.ndarray | None" = None,
-        signals: "list | np.ndarray | None" = None,
-    ) -> "ValidationResult | list[ValidationResult]":
+        prices: list | np.ndarray | None = None,
+        signals: list | np.ndarray | None = None,
+    ) -> ValidationResult | list[ValidationResult]:
         """Run walk-forward validation and return per-fold OOS metrics.
 
         The caller is responsible for training the model on each fold's

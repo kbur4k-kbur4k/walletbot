@@ -60,7 +60,7 @@ jobs:
             --cov=wallet_manager \
             --cov-report=xml \
             --cov-report=term-missing \
-            --cov-fail-under=80
+            --cov-fail-under=85
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
@@ -100,3 +100,41 @@ jobs:
 
       - name: Security scan (bandit)
         run: bandit -r wallet_manager/ -ll
+
+  publish:
+    name: Publish Docker image
+    needs: [quality, security]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

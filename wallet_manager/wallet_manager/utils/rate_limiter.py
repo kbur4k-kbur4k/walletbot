@@ -1,5 +1,6 @@
 """Token bucket rate limiter for Telegram and RPC calls."""
 from __future__ import annotations
+
 import asyncio
 import time
 from dataclasses import dataclass, field

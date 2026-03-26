@@ -1,13 +1,19 @@
 """tests/unit/test_rpc_router.py — RPCRouter failover testleri."""
 from __future__ import annotations
+
 import asyncio
 import time
 from collections import deque
-import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-from wallet_manager.network.router import RPCRouter, _RECOVERY_WINDOW_SECONDS, _PROVIDER_FAILURE_THRESHOLD
-from wallet_manager.core.models import ChainConfig
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
+from wallet_manager.core.models import ChainConfig
+from wallet_manager.network.router import (
+    _PROVIDER_FAILURE_THRESHOLD,
+    _RECOVERY_WINDOW_SECONDS,
+    RPCRouter,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers

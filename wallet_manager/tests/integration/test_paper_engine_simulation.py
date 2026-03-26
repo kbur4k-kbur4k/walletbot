@@ -1,7 +1,9 @@
 """tests/integration/test_paper_engine_simulation.py — PaperEngine E2E."""
 from __future__ import annotations
+
 import numpy as np
 import pytest
+
 from wallet_manager.strategies.paper_engine import PaperTradingEngine
 
 

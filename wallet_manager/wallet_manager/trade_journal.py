@@ -125,7 +125,7 @@ class TradeJournal:
         amount_usd: float | None = None,
         tx_hash: str | None = None,
         extra: dict | None = None,
-        trade: "TradeRecord | None" = None,
+        trade: TradeRecord | None = None,
     ) -> None:
         """Append a JSON line for the completed trade.
 
@@ -184,7 +184,7 @@ class TradeJournal:
             log.warning("TradeJournal: get_recent_trades failed: %s", exc)
             return []
 
-    async def record_trade_async(self, trade: "TradeRecord") -> None:
+    async def record_trade_async(self, trade: TradeRecord) -> None:
         """Async variant for legacy callers using full TradeRecord."""
         await self._rotate_if_needed()
         path = self._get_path()
