@@ -70,6 +70,8 @@ from wallet_manager.exceptions import (
     WalletManagerError,
 )
 from wallet_manager.network.gas_monitor import GasMonitor
+from wallet_manager.orchestrator_gas import GasGuard
+from wallet_manager.orchestrator_lifecycle import LifecycleManager
 from wallet_manager.portfolio_manager import (
     PortfolioManager,
     StrategyType,
@@ -147,114 +149,8 @@ def _get_circuit_breakers() -> dict:
 
 
 async def _validate_startup_config() -> None:
-    """Run before the orchestrator begins any wallet work.
-
-    Checklist:
-    - Is VAULT_KEY set? (if vault is enabled)
-    - Are TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID set?
-    - Is at least one of INFURA_KEY or ALCHEMY_KEY set?
-    - Does WALLET_CONFIG_PATH exist and parse successfully?
-    - Is EXECUTION_MODE a valid value?
-    - Does the ml_models/ directory exist? (in ml_quant mode)
-    - Are model files present in ml_models/? (warning, not error)
-
-    Raises:
-        ConfigurationError: On critical failures.
-    """
-    from wallet_manager.exceptions import ConfigurationError
-
-    cfg = _cfg()
-    warnings: list[str] = []
-
-    # Telegram credentials
-    if not cfg.telegram_bot_token or not cfg.telegram_chat_id:
-        warnings.append(
-            "TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not set — notifications disabled."
-        )
-
-    # RPC keys
-    if not cfg.infura_key and not cfg.alchemy_key:
-        raise ConfigurationError(
-            "At least one of INFURA_KEY or ALCHEMY_KEY must be set."
-        )
-
-    # Wallet config file
-    wallet_path = cfg.wallet_config_path
-    if not wallet_path.is_file():
-        raise ConfigurationError(
-            f"WALLET_CONFIG_PATH={wallet_path} does not exist or is not a file."
-        )
-
-    # EXECUTION_MODE is already validated in Settings.__post_init__
-
-    # ML models check (warning only)
-    if cfg.execution_mode == "ml_quant":
-        ml_dir = Path(__file__).resolve().parent / "ml_models"
-        if not ml_dir.is_dir():
-            warnings.append(
-                "ml_models/ directory not found. ML engine will use statistical fallback."
-            )
-        else:
-            model_files = list(ml_dir.glob("*.json")) + list(ml_dir.glob("*.pt"))
-            if not model_files:
-                warnings.append(
-                    "No model files in ml_models/. Run scripts/train_models.py first. "
-                    "ML engine will use statistical fallback."
-                )
-
-    # Paper trading gate: require minimum paper trades before going live
-    _exec_mode = cfg.execution_mode
-    if _exec_mode in ("ml_quant", "robust", "robust_live"):
-        try:
-            import asyncio as _asyncio
-
-            from wallet_manager.exceptions import ConfigurationError as _CE
-            from wallet_manager.strategies.paper_engine import get_paper_engine
-            _pe = await get_paper_engine()
-            _pnl = await _pe._ledger.get_pnl_summary()
-            _paper_trades = _pnl.get("trade_count", 0)
-            _required = cfg.min_paper_trades_before_live
-            if _paper_trades < _required:
-                raise _CE(
-                    f"EXECUTION_MODE={_exec_mode} requires at least {_required} "
-                    f"completed paper trades (found: {_paper_trades}). "
-                    f"Run with EXECUTION_MODE=robust_paper first."
-                )
-        except ConfigurationError:
-            raise
-        except Exception as _pe_exc:
-            log.warning(
-                "Paper trade gate check failed (%s) — proceeding. "
-                "Ensure paper engine has sufficient trade history before going live.",
-                _pe_exc,
-            )
-
-    # RPC + Aave connectivity checks
-    try:
-        from wallet_manager.utils.health_check import run_startup_health_checks
-        health_problems = await run_startup_health_checks(cfg)
-        for problem in health_problems:
-            warnings.append(f"Health check: {problem}")
-    except Exception as _hc_exc:
-        log.warning("Startup health checks could not run: %s", _hc_exc)
-
-    for w in warnings:
-        log.warning(f"Startup check: {w}")
-
-    # Send warnings via Telegram if possible
-    if warnings and cfg.telegram_bot_token and cfg.telegram_chat_id:
-        try:
-            from wallet_manager.telegram_notifier import TelegramNotifier
-
-            async with TelegramNotifier() as notifier:
-                await notifier.send(
-                    NotificationEvent(
-                        kind=EventKind.SYSTEM_BOOT,
-                        detail="⚠️ Startup warnings:\n" + "\n".join(f"• {w}" for w in warnings),
-                    )
-                )
-        except Exception as _boot_notif_exc:
-            log.warning("Boot notification failed (best-effort): %s", _boot_notif_exc)
+    """Delegate to :meth:`LifecycleManager.validate_startup_config`."""
+    await LifecycleManager.validate_startup_config(_cfg())
 
 
 # ---------------------------------------------------------------------------
@@ -266,62 +162,8 @@ async def _migrate_wallets_to_vault(
     vault,
     config_path: Path,
 ) -> None:
-    """Migrate plaintext private keys in wallets.json to Vault encryption.
-
-    For every private_key field that is a plaintext hex string:
-      1. Write backup: wallets.json.bak (before modifying anything)
-      2. Encrypt the key with vault.encrypt()
-      3. Replace the field value with the encrypted token (base64 str)
-      4. Add field: "vault_encrypted": true
-      5. Write the modified wallets.json atomically (write to .tmp, rename)
-    Idempotent: skips any wallet where vault_encrypted is already true.
-    Logs each migrated wallet_id (masked, never the key itself).
-    """
-    if not config_path.is_file():
-        log.warning(f"_migrate_wallets_to_vault: {config_path} not found, skipping.")
-        return
-
-    raw = config_path.read_text(encoding="utf-8")
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        log.error(f"_migrate_wallets_to_vault: failed to parse {config_path}: {exc}")
-        return
-
-    wallets = data if isinstance(data, list) else [data]
-    migrated = 0
-
-    for wallet in wallets:
-        if wallet.get("vault_encrypted"):
-            continue
-        key = wallet.get("private_key", "")
-        if not key:
-            continue
-        # Write backup before first migration
-        if migrated == 0:
-            bak = config_path.with_suffix(".json.bak")
-            bak.write_text(raw, encoding="utf-8")
-            log.info(f"Vault migration: backup written to {bak}.")
-
-        token_bytes = vault.encrypt(key)
-        token_b64 = base64.b64encode(token_bytes).decode("ascii")
-        wallet["private_key"] = token_b64
-        wallet["vault_encrypted"] = True
-
-        wallet_id = wallet.get("wallet_id", "<unknown>")
-        log.info(f"Vault migration: encrypted key for wallet '{wallet_id}'.")
-        migrated += 1
-
-    if migrated == 0:
-        log.debug("Vault migration: all wallets already encrypted, nothing to do.")
-        return
-
-    # Atomic write: .tmp then rename
-    updated = json.dumps(data if not isinstance(data, list) else wallets, indent=2)
-    tmp_path = config_path.with_suffix(".json.tmp")
-    tmp_path.write_text(updated, encoding="utf-8")
-    tmp_path.replace(config_path)
-    log.info(f"Vault migration: {migrated} wallet(s) migrated and written atomically.")
+    """Delegate to :meth:`LifecycleManager.migrate_wallets_to_vault`."""
+    await LifecycleManager.migrate_wallets_to_vault(vault, config_path)
 
 
 # ---------------------------------------------------------------------------
@@ -519,6 +361,11 @@ class WalletOrchestrator:
         if not wallet_configs:
             raise ValueError("wallet_configs must contain at least one entry.")
         self._gas_monitor = GasMonitor(rpc_url=wallet_configs[0].rpc_url)
+        self._gas_guard = GasGuard(
+            gas_monitor=self._gas_monitor,
+            gas_poll_interval=self._gas_poll_interval,
+            gas_wait_timeout=self._gas_wait_timeout,
+        )
 
         log.debug(
             f"WalletOrchestrator created: {len(wallet_configs)} wallets, concurrency={max_concurrent}.",
@@ -891,76 +738,8 @@ class WalletOrchestrator:
         config: WalletConfig,
         notifier: INotifier,
     ) -> None:
-        """Suspend the current wallet coroutine until gas is within limits.
-
-        Sends a ``GAS_PAUSE`` notification on first suspension and a
-        ``GAS_RESUME`` notification when execution proceeds.
-
-        Args:
-            config: Wallet config carrying the ``max_gas_price_gwei`` ceiling.
-            notifier: Active notification channel.
-
-        Raises:
-            GasPriceTooHighError: If gas has not normalised within
-                ``_gas_wait_timeout`` seconds.
-        """
-        try:
-            safe, current = await self._gas_monitor.is_safe(float(config.max_gas_price_gwei))
-        except Exception as _gas_exc:
-            log.debug("Gas monitor unavailable (%s); proceeding as safe.", _gas_exc)
-            return  # default to safe when monitor is unreachable
-        if safe:
-            return
-
-        # --- First check failed: enter polling loop ---
-        log.info(
-            f"Gas too high for wallet '{config.wallet_id}': {current:.2f} Gwei (max {config.max_gas_price_gwei:.2f}). Pausing.",
-        )
-        await self._safe_notify(
-            notifier,
-            NotificationEvent(
-                kind=EventKind.GAS_PAUSE,
-                wallet_id=config.wallet_id,
-                gas_price_gwei=float(current),
-                detail=(
-                    f"Gas {float(current):.2f} Gwei exceeds ceiling "
-                    f"{float(config.max_gas_price_gwei):.2f} Gwei."
-                ),
-            ),
-        )
-
-        deadline = time.monotonic() + self._gas_wait_timeout
-
-        while time.monotonic() < deadline:
-            await asyncio.sleep(self._gas_poll_interval)
-            safe, current = await self._gas_monitor.is_safe(float(config.max_gas_price_gwei))
-
-            if safe:
-                log.info(
-                    f"Gas normalised for wallet '{config.wallet_id}': {current:.2f} Gwei. Resuming.",
-                )
-                await self._safe_notify(
-                    notifier,
-                    NotificationEvent(
-                        kind=EventKind.GAS_RESUME,
-                        wallet_id=config.wallet_id,
-                        gas_price_gwei=float(current),
-                    ),
-                )
-                return
-
-            log.debug(
-                f"Gas still high for wallet '{config.wallet_id}': {current:.2f} Gwei. Retrying in {self._gas_poll_interval:.0f}s.",
-            )
-
-        # --- Timeout exceeded ---
-        raise GasPriceTooHighError(
-            f"Gas wait timeout ({self._gas_wait_timeout:.0f}s) exceeded "
-            f"for wallet '{config.wallet_id}'.",
-            wallet_id=config.wallet_id,
-            requested_gwei=float(current),
-            max_gwei=float(config.max_gas_price_gwei),
-        )
+        """Delegate gas gating to :class:`~wallet_manager.orchestrator_gas.GasGuard`."""
+        await self._gas_guard.wait_for_safe_gas(config, notifier, self._safe_notify)
 
     # ------------------------------------------------------------------
     # Helpers
@@ -1458,7 +1237,7 @@ class MasterOrchestrator(WalletOrchestrator):
             usdc_val = actions.usdc_balance_usd_value(balance_usdc)
             total_tvl = portfolio_manager.total_value_usd or (eth_val + usdc_val)
             try:
-                current_gwei = await self._gas_monitor.current_gwei()
+                current_gwei = await self._gas_guard.current_gwei()
             except Exception:
                 current_gwei = 0.0
             aave_stats = await actions.get_aave_stats(config.rpc_url, address)
@@ -1631,30 +1410,8 @@ async def main() -> None:
 
 
 def _setup_signal_handlers(loop: asyncio.AbstractEventLoop, command_state: object) -> None:
-    """Register SIGTERM and SIGINT handlers for graceful shutdown.
-
-    Translates OS signals into a :meth:`CommandState.stop` call so the
-    orchestrator drains in-flight transactions before exiting.  Docker
-    ``stop`` and systemd ``stop`` both use SIGTERM.
-
-    Args:
-        loop: The running event loop.
-        command_state: Shared :class:`~wallet_manager.telegram_notifier.CommandState`.
-    """
-    import signal as _signal
-
-    def _handle_signal(sig: _signal.Signals) -> None:
-        log.warning(f"Received signal {sig.name} — requesting graceful shutdown.")
-        if hasattr(command_state, "stop"):
-            command_state.stop()
-
-    for sig in (_signal.SIGTERM, _signal.SIGINT):
-        try:
-            loop.add_signal_handler(sig, lambda s=sig: _handle_signal(s))
-        except (NotImplementedError, RuntimeError):
-            # Windows does not support loop.add_signal_handler; fall back to
-            # the default signal handler (KeyboardInterrupt will still work).
-            pass
+    """Delegate to :meth:`LifecycleManager.setup_signal_handlers`."""
+    LifecycleManager.setup_signal_handlers(loop, command_state)
 
 
 if __name__ == "__main__":  # pragma: no cover
