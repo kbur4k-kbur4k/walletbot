@@ -6,9 +6,15 @@ wallet_manager/config.py
 wallet_manager/exceptions.py
 wallet_manager/metrics_server.py
 wallet_manager/orchestrator.py
+wallet_manager/orchestrator_gas.py
+wallet_manager/orchestrator_lifecycle.py
 wallet_manager/portfolio_manager.py
 wallet_manager/scheduler.py
 wallet_manager/task_factories.py
+wallet_manager/task_factories_airdrop.py
+wallet_manager/task_factories_algo.py
+wallet_manager/task_factories_short.py
+wallet_manager/task_factories_yield.py
 wallet_manager/telegram_notifier.py
 wallet_manager/trade_journal.py
 wallet_manager.egg-info/PKG-INFO
@@ -44,6 +50,7 @@ wallet_manager/strategies/algo_strategy.py
 wallet_manager/strategies/alpha_decay_monitor.py
 wallet_manager/strategies/alpha_engine.py
 wallet_manager/strategies/deep_kelly_risk.py
+wallet_manager/strategies/ensemble_weighter.py
 wallet_manager/strategies/execution_logic.py
 wallet_manager/strategies/flash_crash_detector.py
 wallet_manager/strategies/idle_sweep.py
@@ -61,10 +68,12 @@ wallet_manager/strategies/robust_alpha.py
 wallet_manager/strategies/short_strategy.py
 wallet_manager/strategies/signal_intelligence.py
 wallet_manager/strategies/smart_order_router.py
+wallet_manager/strategies/stacking_meta_learner.py
 wallet_manager/strategies/stochastic_stress_test.py
 wallet_manager/strategies/wf_validator.py
 wallet_manager/strategies/yield_strategy.py
 wallet_manager/utils/__init__.py
 wallet_manager/utils/cooldown.py
 wallet_manager/utils/health_check.py
+wallet_manager/utils/log_schema.py
 wallet_manager/utils/rate_limiter.py

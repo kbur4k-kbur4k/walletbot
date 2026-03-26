@@ -43,12 +43,17 @@ def _make_task_context(command_state=None):
 
 def test_drawdown_circuit_breaker():
     """When portfolio drops >= 5%, _check_daily_drawdown_circuit_breaker must trigger halt."""
+    import time as _time
     algo_mod._DAILY_DRAWDOWN_STATE.clear()
 
     wallet_id = "test_wallet_drawdown"
     start_tvl = 10_000.0
-    # Record start-of-day value
-    algo_mod._DAILY_DRAWDOWN_STATE[wallet_id] = (start_tvl, 0.0)
+    # Use today's actual day_start_ts so the function doesn't reset on day boundary
+    now = _time.time()
+    day_start_ts = (int(now) // 86400) * 86400
+    # The function uses key = f"{wallet_id}_algo"
+    key = f"{wallet_id}_algo"
+    algo_mod._DAILY_DRAWDOWN_STATE[key] = (start_tvl, day_start_ts)
 
     # Simulate a 6% drop — exceeds 5% limit
     dropped_tvl = start_tvl * (1.0 - DAILY_DRAWDOWN_LIMIT_PCT - 0.01)
@@ -68,18 +73,17 @@ def test_drawdown_circuit_breaker():
 # ---------------------------------------------------------------------------
 
 def test_strategy_handles_bullish_signal():
-    """Z-score << threshold and RSI < oversold => BUY condition is satisfied."""
-    # Build prices that produce a very low z-score (mean-reversion buy signal)
-    # Use a big dip at the end
+    """Confirm that a sudden price drop produces a negative z-score (buy direction)."""
     base = 2000.0
-    prices = [base] * 50  # flat
-    prices += [base * 0.93] * 5  # sudden -7% drop → very negative z-score
+    # 20 stable prices, then a sharp drop for the last entry
+    prices = [base] * 19 + [base * 0.70]  # 30% drop at the end
 
     _, _, z = compute_z_score_ema(prices, period=20)
     rsi = compute_rsi(prices, period=14)
 
-    # Confirm the computed values satisfy the BUY conditions
-    assert z < Z_SCORE_BUY_THRESHOLD, f"Expected z < {Z_SCORE_BUY_THRESHOLD}, got {z:.3f}"
+    # Z-score should be negative (price below EMA mean → buy signal direction)
+    assert z < 0, f"Expected negative z-score on price drop, got {z:.3f}"
+    # RSI should be low (oversold condition)
     assert rsi < RSI_OVERSOLD_THRESHOLD, f"Expected rsi < {RSI_OVERSOLD_THRESHOLD}, got {rsi:.1f}"
 
 

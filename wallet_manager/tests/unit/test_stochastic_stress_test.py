@@ -29,8 +29,9 @@ def test_monte_carlo_profitable():
     )
     assert isinstance(verdict, StressTestVerdict)
     # We can't guarantee pass every seed, but the mc result must be accessible
-    assert hasattr(verdict, "mc_result")
-    assert verdict.mc_result.win_rate >= 0.0
+    # StressTestVerdict has 'monte_carlo' field (not 'mc_result')
+    assert hasattr(verdict, "monte_carlo")
+    assert verdict.monte_carlo.win_rate >= 0.0
 
 
 def test_monte_carlo_unprofitable():
@@ -45,6 +46,6 @@ def test_monte_carlo_unprofitable():
         signal_direction=-1,
     )
     assert isinstance(verdict, StressTestVerdict)
-    assert hasattr(verdict, "mc_result")
+    assert hasattr(verdict, "monte_carlo")
     # Win-rate is a float in [0,1]
-    assert 0.0 <= verdict.mc_result.win_rate <= 1.0
+    assert 0.0 <= verdict.monte_carlo.win_rate <= 1.0
