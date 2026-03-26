@@ -1,5 +1,37 @@
 # Changelog
 
+## [Unreleased] — Autonomous agent run (2026-03-26)
+
+### Phase 1 — Stability & Correctness
+- **fix**: Replaced 19 bare `except: pass` blocks with structured `log.warning()` / `log.error()` calls across 7 files
+- **feat**: Completed Compound V3 USDC APY integration on Base (`0xb125E6687...`) in `actions.py`
+- **fix**: Added full type annotations to `oci_deployer.py`, removed mypy exclusion from `pyproject.toml`
+
+### Phase 2 — ML Excellence
+- **feat**: `DynamicEnsembleWeighter` — rolling OOS Sharpe-based weight adaptation, persisted to `ml_models/ensemble_weights.json`
+- **feat**: Feature set expanded from 30 to 36 dimensions (rsi_14, bb_position, volume_trend, price_acceleration, spread_ratio, microstructure_score)
+- **feat**: Model versioning — `archive_models()` snapshots to `ml_models/archive/YYYYMMDD_HHMMSS/`, prunes to 3 most recent; `training_report.json` gains version/trained_at/archive_path
+- **feat**: Online logistic regression meta-learner (`stacking_meta_learner.py`) replaces static weighted average; SGD updates every 100 obs over 500-obs window
+
+### Phase 3 — New Capabilities
+- **feat**: Backtesting engine (`scripts/backtest.py`) with Sharpe, drawdown, win-rate, profit-factor, pillar breakdown
+- **feat**: 13 Prometheus alert rules (`monitoring/alert_rules.yml`) covering portfolio, ML, RPC, gas, and safety
+- **feat**: Prometheus Alertmanager webhook (`alerting/prometheus_webhook.py`) → Telegram with 30s rate limiting
+
+### Phase 4 — Refactoring
+- **refactor**: `orchestrator.py` split into `orchestrator_gas.py` (`GasGuard`) + `orchestrator_lifecycle.py` (`LifecycleManager`)
+- **refactor**: `task_factories.py` split into 4 per-pillar shim modules
+
+### Phase 5 — Test Coverage
+- **test**: Added `test_oci_deployer.py` (12 tests), `test_ensemble_weighter.py` (7), `test_feature_expansion.py` (8), `test_model_versioning.py` (3), `test_compound_integration.py` (5)
+- **test**: Added `test_flash_crash_detector.py`, `test_stochastic_stress_test.py`, `test_algo_strategy.py`, `test_backtest.py`, `test_prometheus_webhook.py`, `test_log_schema.py`, `test_health_endpoints.py`
+- **test**: Added `tests/integration/test_full_cycle.py`
+
+### Phase 6 — Operational Excellence
+- **feat**: Standardised JSON logging schema (`utils/log_schema.py` + `JsonFormatter`)
+- **feat**: Health check endpoints `/ready`, `/live`, `/metrics/summary`
+- **feat**: Multi-stage Dockerfile, docker-compose resource limits, Kubernetes manifests (`deployment/k8s/`)
+
 ## [Unreleased] — 2026-03-25
 
 ### Added
