@@ -82,8 +82,11 @@ FEATURE_NAMES: list[str] = [
     "trend_ofi", "sigma_vol_ratio", "mom_align", "ofi_weighted",
     "kyle_lambda", "amihud_ratio", "kalman_accel", "horizon_score",
     "rv5_sigma_ratio", "vol_ratio_sq", "mom_reversal", "mom_momentum",
+    # Expanded 6 (feature engineering expansion)
+    "rsi_14", "bb_position", "volume_trend",
+    "price_acceleration", "spread_ratio", "microstructure_score",
 ]
-N_FEATURES = len(FEATURE_NAMES)  # 30
+N_FEATURES = len(FEATURE_NAMES)  # 36
 
 # Anti-overfit thresholds
 # NOTE: _MIN_OOS_SHARPE lives here (in scripts/) — NOT in wallet_manager/.
@@ -202,7 +205,7 @@ def _kyle_lambda_rolling(log_ret: np.ndarray, signed_vol: np.ndarray, window: in
 
 
 def build_feature_matrix(df: pd.DataFrame) -> pd.DataFrame:
-    """Compute all 30 training features from historical OHLCV."""
+    """Compute all 36 training features from historical OHLCV."""
     if "timestamp" in df.columns:
         df = df.sort_values("timestamp").reset_index(drop=True)
     else:
@@ -254,6 +257,43 @@ def build_feature_matrix(df: pd.DataFrame) -> pd.DataFrame:
     amihud_ewm = pd.Series(amihud).ewm(span=10).mean().values
     rv5_sigma_ratio = np.where(garch_sigma > 1e-10, rv5 / garch_sigma, 1.0)
 
+    # --- Expanded features (6 new) ---
+    # rsi_14: 14-period RSI normalized to [0, 1]
+    close_s = pd.Series(close)
+    delta = close_s.diff().fillna(0.0)
+    gains = delta.clip(lower=0.0)
+    losses = (-delta).clip(lower=0.0)
+    avg_gain = gains.rolling(14).mean().fillna(0.0)
+    avg_loss = losses.rolling(14).mean().fillna(0.0)
+    rs = avg_gain / avg_loss.clip(lower=1e-10)
+    rsi_14 = (1.0 - 1.0 / (1.0 + rs)).clip(0.0, 1.0).values
+
+    # bb_position: (price − lower) / (upper − lower), clipped [0, 1]
+    bb_mean = close_s.rolling(20).mean()
+    bb_std = close_s.rolling(20).std().fillna(0.0)
+    bb_upper = bb_mean + 2.0 * bb_std
+    bb_lower = bb_mean - 2.0 * bb_std
+    bb_width = (bb_upper - bb_lower).clip(lower=1e-10)
+    bb_position = ((close_s - bb_lower) / bb_width).clip(0.0, 1.0).fillna(0.5).values
+
+    # volume_trend: EMA(vol,20) / EMA(vol,5), clipped [0.1, 10]
+    vol_s = pd.Series(volume)
+    ema20_vol = vol_s.ewm(span=20, adjust=False).mean()
+    ema5_vol = vol_s.ewm(span=5, adjust=False).mean()
+    volume_trend = (ema20_vol / ema5_vol.clip(lower=1e-10)).clip(0.1, 10.0).fillna(1.0).values
+
+    # price_acceleration: reuse existing Kalman 3-state acceleration
+    price_acceleration = kalman_accel
+
+    # spread_ratio: current spread_bps / rolling_mean(spread_bps, 50), clipped [0.1, 10]
+    spread_s = pd.Series(spread_bps)
+    spread_mean50 = spread_s.rolling(50).mean()
+    spread_mean50 = spread_mean50.bfill().fillna(spread_s.mean() if spread_s.mean() > 0 else 1.0)
+    spread_ratio = (spread_s / spread_mean50.clip(lower=1e-10)).clip(0.1, 10.0).fillna(1.0).values
+
+    # microstructure_score: log1p(|kyle_lambda * amihud_ratio|) using raw (unscaled) values
+    microstructure_score = np.log1p(np.abs(kyle_lam * amihud_ewm))
+
     feat = pd.DataFrame({
         "log_return": log_ret, "kalman_price": kalman_price, "kalman_trend": kalman_trend,
         "garch_sigma": garch_sigma, "realized_vol_5": rv5, "realized_vol_30": rv30,
@@ -274,8 +314,22 @@ def build_feature_matrix(df: pd.DataFrame) -> pd.DataFrame:
         "vol_ratio_sq": vol_ratio ** 2,
         "mom_reversal": m5 - m15,
         "mom_momentum": m15 - m30,
+        # Expanded 6
+        "rsi_14": rsi_14,
+        "bb_position": bb_position,
+        "volume_trend": volume_trend,
+        "price_acceleration": price_acceleration,
+        "spread_ratio": spread_ratio,
+        "microstructure_score": microstructure_score,
     })
     feat.replace([np.inf, -np.inf], 0.0, inplace=True)
+    # Apply feature-specific NaN defaults
+    for col in ("rsi_14", "price_acceleration", "microstructure_score"):
+        feat[col] = feat[col].fillna(0.0)
+    for col in ("bb_position",):
+        feat[col] = feat[col].fillna(0.5)
+    for col in ("volume_trend", "spread_ratio"):
+        feat[col] = feat[col].fillna(1.0)
     feat.fillna(0.0, inplace=True)
     return feat
 

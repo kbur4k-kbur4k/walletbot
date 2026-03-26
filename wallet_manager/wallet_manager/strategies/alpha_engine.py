@@ -821,7 +821,7 @@ class StochasticMLAlphaEngine:
           3.  KalmanPriceSmoother (3-state) — price / velocity / acceleration.
           4.  OrderFlowImbalanceV2 — weighted OFI, Kyle λ, Amihud.
           5.  MultiHorizonSignal — composite across 5m/15m/30m/1h/4h.
-          6.  FeatureStore — build 30-dim vector and normalize.
+          6.  FeatureStore — build 36-dim vector and normalize.
           7.  Feed sequences to LSTM (18-dim) and Transformer (30-dim) buffers.
           8.  EnsembleAlphaEngine — 4-model prediction with Platt calibration.
           9.  Vol regime dampening + AlphaConfidenceEstimator.
@@ -858,8 +858,13 @@ class StochasticMLAlphaEngine:
         self.multi_horizon.update(price)
         horizon_score = self.multi_horizon.compute()
 
-        # --- Step 6: 30-dim feature vector + normalization ---
-        features_30 = self.feature_store.build(fv, self.ofi_v2, self.kalman_smoother, horizon_score)
+        # --- Step 6: 36-dim feature vector + normalization ---
+        _price_hist = np.array(self.feature_engineer._prices, dtype=np.float64)
+        _vol_hist = np.array(self.feature_engineer._volumes, dtype=np.float64)
+        features_30 = self.feature_store.build(
+            fv, self.ofi_v2, self.kalman_smoother, horizon_score,
+            price_history=_price_hist, volume_history=_vol_hist,
+        )
         normalized_30 = self.normalizer_30.update_and_normalize(features_30)
         self._last_feature_vector = np.asarray(normalized_30, dtype=np.float64)
 
@@ -942,7 +947,7 @@ class StochasticMLAlphaEngine:
         return signal
 
     def get_last_feature_vector(self) -> np.ndarray | None:
-        """Return the 30-dim feature vector from the most recent generate_signal() call.
+        """Return the 36-dim feature vector from the most recent generate_signal() call.
 
         Returns None before first call.
         """
@@ -1238,12 +1243,12 @@ class MultiHorizonSignal:
 
 
 # ---------------------------------------------------------------------------
-# FeatureStore — 30-dim feature vector (18 base + 12 derived)
+# FeatureStore — 36-dim feature vector (18 base + 12 derived + 6 expanded)
 # ---------------------------------------------------------------------------
 
 
 class FeatureStore:
-    """Assembles the extended 30-dimensional feature array.
+    """Assembles the extended 36-dimensional feature array.
 
     Base (18): FeatureVector.to_array()
     Derived (12):
@@ -1259,11 +1264,18 @@ class FeatureStore:
         9  vol_ratio² (nonlinear vol signal)
         10 short-term reversal (m5 - m15)
         11 medium-term momentum (m15 - m30)
+    Expanded (6):
+        0  rsi_14             — 14-period RSI normalized to [0, 1]
+        1  bb_position        — price position within 20-period Bollinger Bands
+        2  volume_trend       — EMA(vol,20) / EMA(vol,5) ratio
+        3  price_acceleration — Kalman 3-state acceleration component
+        4  spread_ratio       — current spread_bps / rolling_mean(spread_bps, 50)
+        5  microstructure_score — log1p(|Kyle λ × Amihud|)
     """
 
-    N_FEATURES = 30
+    N_FEATURES = 36
 
-    # Must exactly match the order produced by build() — 18 base + 12 derived
+    # Must exactly match the order produced by build() — 18 base + 12 derived + 6 expanded
     FEATURE_NAMES: list[str] = [
         # Base (18): FeatureVector.to_array() order
         "log_return", "kalman_price", "kalman_trend", "garch_sigma",
@@ -1284,7 +1296,17 @@ class FeatureStore:
         "vol_ratio_squared",
         "short_term_reversal",
         "medium_term_momentum",
+        # Expanded (6): feature engineering expansion
+        "rsi_14",
+        "bb_position",
+        "volume_trend",
+        "price_acceleration",
+        "spread_ratio",
+        "microstructure_score",
     ]
+
+    def __init__(self) -> None:
+        self._spread_history: deque[float] = deque(maxlen=50)
 
     def build(
         self,
@@ -1292,6 +1314,8 @@ class FeatureStore:
         ofi_v2: OrderFlowImbalanceV2,
         smoother: KalmanPriceSmoother,
         horizon_score: float,
+        price_history: np.ndarray | None = None,
+        volume_history: np.ndarray | None = None,
     ) -> np.ndarray:
         base = base_fv.to_array()  # 18 dims
 
@@ -1310,7 +1334,93 @@ class FeatureStore:
             base_fv.momentum_15 - base_fv.momentum_30,
         ], dtype=np.float64)
 
-        return np.concatenate([base, derived])
+        # --- Expanded feature set (6 new features) ---
+        self._spread_history.append(base_fv.spread_bps)
+
+        expanded = np.array([
+            float(np.nan_to_num(self._compute_rsi(price_history, 14), nan=0.5)),
+            float(np.nan_to_num(self._compute_bb_position(price_history, base_fv.price, 20), nan=0.5)),
+            float(np.nan_to_num(self._compute_volume_trend(volume_history), nan=1.0)),
+            float(np.nan_to_num(smoother.acceleration, nan=0.0)),
+            float(np.nan_to_num(self._compute_spread_ratio(base_fv.spread_bps), nan=1.0)),
+            float(np.nan_to_num(self._compute_microstructure_score(ofi_v2), nan=0.0)),
+        ], dtype=np.float64)
+
+        return np.concatenate([base, derived, expanded])
+
+    # ------------------------------------------------------------------
+    # Private helpers for expanded features
+    # ------------------------------------------------------------------
+
+    def _compute_rsi(self, prices: np.ndarray | None, period: int = 14) -> float:
+        """14-period RSI normalized to [0, 1]."""
+        if prices is None or len(prices) < period + 1:
+            return 0.5
+        p = prices[-(period + 1):]
+        deltas = np.diff(p)
+        gains = np.where(deltas > 0, deltas, 0.0)
+        losses = np.where(deltas < 0, -deltas, 0.0)
+        avg_gain = float(np.mean(gains))
+        avg_loss = float(np.mean(losses))
+        if avg_loss < 1e-10:
+            return 1.0 if avg_gain > 0 else 0.5
+        rs = avg_gain / avg_loss
+        rsi_raw = 100.0 - 100.0 / (1.0 + rs)
+        return float(np.clip(rsi_raw / 100.0, 0.0, 1.0))
+
+    def _compute_bb_position(
+        self, prices: np.ndarray | None, current_price: float, period: int = 20
+    ) -> float:
+        """Price position within 20-period Bollinger Bands, clipped [0, 1]."""
+        if prices is None or len(prices) < period:
+            return 0.5
+        p = prices[-period:]
+        mean = float(np.mean(p))
+        std = float(np.std(p))
+        if std < 1e-10:
+            return 0.5
+        upper = mean + 2.0 * std
+        lower = mean - 2.0 * std
+        band_width = upper - lower
+        if band_width < 1e-10:
+            return 0.5
+        position = (current_price - lower) / band_width
+        return float(np.clip(position, 0.0, 1.0))
+
+    def _compute_volume_trend(self, volumes: np.ndarray | None) -> float:
+        """EMA(vol, 20) / EMA(vol, 5) ratio, clipped [0.1, 10]."""
+        if volumes is None or len(volumes) < 5:
+            return 1.0
+
+        def _ema(arr: np.ndarray, span: int) -> float:
+            alpha = 2.0 / (span + 1)
+            val = float(arr[0])
+            for v in arr[1:]:
+                val = alpha * float(v) + (1.0 - alpha) * val
+            return val
+
+        ema5 = _ema(volumes[-5:], 5)
+        ema20 = _ema(volumes[-min(20, len(volumes)):], 20)
+        if ema5 < 1e-10:
+            return 1.0
+        return float(np.clip(ema20 / ema5, 0.1, 10.0))
+
+    def _compute_spread_ratio(self, current_spread: float) -> float:
+        """current spread_bps / rolling_mean(spread_bps, 50), clipped [0.1, 10]."""
+        if len(self._spread_history) < 5:
+            return 1.0
+        mean_spread = float(np.mean(list(self._spread_history)))
+        if mean_spread < 1e-10:
+            return 1.0
+        return float(np.clip(current_spread / mean_spread, 0.1, 10.0))
+
+    def _compute_microstructure_score(self, ofi_v2: OrderFlowImbalanceV2) -> float:
+        """Kyle lambda × Amihud ratio, log-scaled."""
+        try:
+            product = abs(float(ofi_v2.kyle_lambda) * float(ofi_v2.amihud_ratio))
+            return float(math.log1p(product))
+        except Exception:
+            return 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -1319,7 +1429,7 @@ class FeatureStore:
 
 
 class LightGBMPredictor:
-    """LightGBM predictor on 30-dim feature vector.
+    """LightGBM predictor on 36-dim feature vector.
 
     Falls back to neutral (0.5, 0.5) when no trained model is available.
     LightGBM trains ~10× faster than XGBoost on tabular data, complementing
@@ -1350,7 +1460,14 @@ class LightGBMPredictor:
                 prob = max(0.01, min(0.99, prob))
                 return prob, 1.0 - prob
             except Exception as exc:
-                log.debug(f"LightGBM inference failed: {exc}")
+                exc_str = str(exc).lower()
+                if "feature" in exc_str or "shape" in exc_str or "mismatch" in exc_str:
+                    log.warning(
+                        f"LightGBM feature mismatch — model trained with different "
+                        f"feature count (got {features.shape[0]}): {exc}"
+                    )
+                else:
+                    log.debug(f"LightGBM inference failed: {exc}")
         return 0.5, 0.5
 
 
@@ -1362,7 +1479,7 @@ class LightGBMPredictor:
 class TransformerPredictor:
     """Self-attention Transformer for 48-bar (4h) sequence modelling.
 
-    Operates on the full 30-dim feature sequence. Captures longer-range
+    Operates on the full 36-dim feature sequence. Captures longer-range
     regime patterns that LSTM's recurrent state can miss when gradients vanish.
     Falls back to neutral until buffer fills or model is unavailable.
     """
@@ -1457,7 +1574,7 @@ class EnsembleAlphaEngine:
         """Run all 4 models and return calibrated per-model + ensemble probs.
 
         XGBoost and LSTM use the 18-dim base slice for backward-compat with
-        existing trained checkpoints; LightGBM and Transformer use all 30.
+        existing trained checkpoints; LightGBM and Transformer use all 36.
 
         Returns:
             Dict with keys 'xgb', 'lgbm', 'lstm', 'transformer', 'ensemble'.
