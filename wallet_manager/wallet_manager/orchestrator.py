@@ -253,8 +253,8 @@ async def _validate_startup_config() -> None:
                         detail="⚠️ Startup warnings:\n" + "\n".join(f"• {w}" for w in warnings),
                     )
                 )
-        except Exception:
-            pass  # Best-effort
+        except Exception as _boot_notif_exc:
+            log.warning("Boot notification failed (best-effort): %s", _boot_notif_exc)
 
 
 # ---------------------------------------------------------------------------
@@ -646,8 +646,8 @@ class WalletOrchestrator:
                                     _snapshot = None
                                     try:
                                         _snapshot = portfolio_manager.get_snapshot()
-                                    except Exception:
-                                        pass
+                                    except Exception as _snap_exc:
+                                        log.warning("Portfolio snapshot failed in alerter loop: %s", _snap_exc)
                                     _pa_inputs = await _collect_alerter_inputs(_snapshot, get_settings())
                                     await _proactive_alerter.check_and_alert(
                                         notifier=notifier,
@@ -1032,10 +1032,8 @@ async def send_heartbeat_telemetry(
             from wallet_manager.strategies import yield_strategy
             aave_apy = await yield_strategy.get_apy(rpc_url)
             aave_balance = await yield_strategy.get_aave_usdc_balance(rpc_url, address)
-        except Exception:
-            pass
-
-        # Short position state — graceful fallback
+        except Exception as _aave_exc:
+            log.warning("Aave balance/APY fetch failed for heartbeat (non-critical): %s", _aave_exc)
         short_pnl = 0.0
         short_active = False
         with contextlib.suppress(Exception):
@@ -1071,8 +1069,8 @@ async def send_heartbeat_telemetry(
                     f"  Realized PnL: ${pnl_summary.get('realized_pnl', 0):+.2f}",
                     f"  Max DD: {pnl_summary.get('max_drawdown', 0):.2%}",
                 ]
-            except Exception:
-                pass
+            except Exception as _paper_exc:
+                log.warning("Paper engine stats fetch failed for heartbeat: %s", _paper_exc)
 
         # Build heartbeat message
         lines = [

@@ -1054,14 +1054,63 @@ AAVE_APY_ALERT_THRESHOLD_PCT = 2.0
 DEFAULT_ALTERNATIVE_APY_PCT = 3.5
 
 
+# Compound III USDC on Base (cUSDCv3)
+COMPOUND_V3_CUSDC_BASE = "0xb125E6687d4313864e53df431d5425969c15Eb2"
+
+# ABI fragments for Compound III comet (cUSDCv3)
+COMPOUND_V3_ABI = [
+    {
+        "inputs": [],
+        "name": "getUtilization",
+        "outputs": [{"name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [{"name": "utilization", "type": "uint256"}],
+        "name": "getSupplyRate",
+        "outputs": [{"name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+]
+
+
+async def _get_compound_v3_apy(rpc_url: str) -> float | None:
+    """
+    Fetch Compound III (cUSDCv3) supply APY on Base.
+
+    Returns APY as a percentage (e.g. 4.2 for 4.2%) or None on any failure.
+    """
+    try:
+        from web3 import AsyncWeb3
+        from web3.providers import AsyncHTTPProvider
+
+        w3 = AsyncWeb3(AsyncHTTPProvider(rpc_url))
+        comet = w3.eth.contract(
+            address=AsyncWeb3.to_checksum_address(COMPOUND_V3_CUSDC_BASE),
+            abi=COMPOUND_V3_ABI,
+        )
+        utilization: int = await comet.functions.getUtilization().call()
+        rate_per_second: int = await comet.functions.getSupplyRate(utilization).call()
+        # rate_per_second is in 1e18 scale; annualise to percentage
+        seconds_per_year = 365 * 24 * 3600
+        apy_pct = (rate_per_second / 1e18) * seconds_per_year * 100
+        return float(apy_pct)
+    except Exception as exc:
+        log.warning("Compound V3 APY fetch failed: %s", exc)
+        return None
+
+
 async def get_alternative_stable_yield_apy(rpc_url: str, chain_id: int = CHAIN_ID_BASE) -> tuple[float, str]:
     """
     Fetch best alternative USDC yield when Aave is below threshold.
-    Returns (apy_pct, protocol_name). On Base, tries Compound V3 if available;
-    otherwise returns conservative estimate for Stable-LP / Compound.
+    Returns (apy_pct, protocol_name). On Base, tries Compound V3 first;
+    falls back to conservative constant only on failure.
     """
-    # TODO: Add Compound V3 cUSDCv3 Base contract when addresses provided
-    # For now return conservative alternative
+    apy = await _get_compound_v3_apy(rpc_url)
+    if apy is not None:
+        return apy, "Compound V3"
     return DEFAULT_ALTERNATIVE_APY_PCT, "Compound/Stable-LP"
 
 

@@ -653,5 +653,5 @@ def _append_trade_notification(
             )
         )
         task_context["trade_notifications"] = pending
-    except Exception:
-        pass
+    except Exception as _notif_exc:
+        log.warning("Trade notification queueing failed (non-critical): %s", _notif_exc)

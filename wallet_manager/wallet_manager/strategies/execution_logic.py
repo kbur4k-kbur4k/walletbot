@@ -270,8 +270,8 @@ class MLQuantExecutionEngine:
                     volume_imbalance=vol_imb,
                     spread_bps=5.0,  # Estimate; would come from pool data
                 )
-        except Exception:
-            pass
+        except Exception as _ms_exc:
+            log.warning("Microstructure update failed (non-critical): %s", _ms_exc)
 
         # Generate ML alpha signal
         signal = self.alpha.process_tick(price, volume=0.0)
@@ -317,8 +317,8 @@ class MLQuantExecutionEngine:
             from wallet_manager.strategies.yield_strategy import get_aave_usdc_balance
             aave_balance = await get_aave_usdc_balance(rpc_url, address)
             total_tvl += aave_balance / 1e6
-        except Exception:
-            pass
+        except Exception as _aave_exc:
+            log.warning("Aave TVL enrichment failed (non-critical): %s", _aave_exc)
 
         # Update drawdown tracker
         dd_state = self.risk.update_equity(total_tvl)
@@ -419,8 +419,8 @@ class MLQuantExecutionEngine:
                         task_context=task_context, analytics_db=analytics_db,
                     )
                     result.sweep_receipts = sweep_recs
-                except Exception:
-                    pass
+                except Exception as _sweep_exc:
+                    log.warning("Idle sweep on low-confidence path failed: %s", _sweep_exc)
                 return result
         except Exception as _conf_exc:
             log.debug("Confidence gate check failed: %s", _conf_exc)
@@ -496,8 +496,8 @@ class MLQuantExecutionEngine:
                 task_context=task_context, analytics_db=analytics_db,
             )
             result.sweep_receipts = sweep_recs
-        except Exception:
-            pass
+        except Exception as _sweep2_exc:
+            log.warning("Idle sweep after trade failed: %s", _sweep2_exc)
 
         # ==============================================================
         # 8. POST-TRADE ANALYTICS
@@ -744,8 +744,8 @@ class MLQuantExecutionEngine:
             try:
                 from wallet_manager.config import get_settings as _gs
                 _exec_mode_val = _gs().execution_mode
-            except Exception:
-                pass
+            except Exception as _mode_exc:
+                log.warning("Could not read execution_mode from settings: %s", _mode_exc)
             trade_rec = TradeRecord(
                 timestamp_utc=datetime.datetime.utcnow().isoformat() + "Z",
                 wallet_id=wallet_id,
@@ -860,8 +860,8 @@ def _notify_ml_trade(
             tx_hash=result.receipts[-1].tx_hash if result.receipts else None,
         ))
         task_context["trade_notifications"] = pending
-    except Exception:
-        pass
+    except Exception as _notif_exc:
+        log.warning("Trade notification queueing failed (non-critical): %s", _notif_exc)
 
 
 # ---------------------------------------------------------------------------

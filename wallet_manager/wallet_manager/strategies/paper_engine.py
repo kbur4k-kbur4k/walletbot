@@ -1119,8 +1119,8 @@ class PaperTradingEngine:
                 robust_engine.set_microstructure(
                     volume_imbalance=vol_imb, spread_bps=5.0,
                 )
-        except Exception:
-            pass
+        except Exception as _ms_exc:
+            log.warning("Paper engine microstructure update failed (non-critical): %s", _ms_exc)
 
         signal = robust_engine.ingest_price(price, volume=0.0)
 
@@ -1248,7 +1248,8 @@ class PaperTradingEngine:
                 )
                 if profile:
                     pool_depth_usd = max(profile.depth_usd, 10_000.0)
-            except Exception:
+            except Exception as _liq_exc:
+                log.warning("Pool liquidity profile failed (non-critical): %s", _liq_exc)
                 pass
 
             # --- Slippage simulation ---
@@ -1336,7 +1337,8 @@ class PaperTradingEngine:
                 )
                 if profile:
                     pool_depth_usd = max(profile.depth_usd, 10_000.0)
-            except Exception:
+            except Exception as _liq_exc:
+                log.warning("Pool liquidity profile failed (non-critical): %s", _liq_exc)
                 pass
 
             # --- Slippage simulation ---
@@ -1529,8 +1531,8 @@ class PaperTradingEngine:
                 row = await cur.fetchone()
             if row:
                 total_gas = float(row["total_gas"])
-        except Exception:
-            pass
+        except Exception as _gas_exc:
+            log.warning("Paper engine gas cost DB query failed (non-critical): %s", _gas_exc)
 
         lines = [
             "--- PAPER TRADING REPORT ---",

@@ -416,8 +416,8 @@ class SmartOrderRouter:
                 result = await _quote_uniswap_v3(rpc_url, from_token, to_token, amount_in_wei, fee)
                 if result and result.amount_out > best:
                     best = result.amount_out
-            except Exception:
-                pass
+            except Exception as _q_exc:
+                log.warning("Uniswap V3 quote fee=%d failed: %s", fee, _q_exc)
         return best
 
     async def _quote_sushiswap(
@@ -434,8 +434,8 @@ class SmartOrderRouter:
                 result = await _quote_sushiswap_v3(rpc_url, from_token, to_token, amount_in_wei, fee)
                 if result and result.amount_out > best:
                     best = result.amount_out
-            except Exception:
-                pass
+            except Exception as _sq_exc:
+                log.warning("SushiSwap V3 quote fee=%d failed: %s", fee, _sq_exc)
         return best
 
     async def get_best_route(
